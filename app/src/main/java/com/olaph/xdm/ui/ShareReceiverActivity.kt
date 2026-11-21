@@ -21,10 +21,12 @@ import com.olaph.xdm.engine.UrlUtils
 import com.olaph.xdm.service.DownloadService
 
 /**
- * Transparent entry point for "Share → XDM" and "Open with → XDM": shows only the add sheet on top of
- * the calling app, so the user never has to open the full UI.
+ * نقطة دخول شفافة لخياري «مشاركة ← XDM» و«فتح باستخدام ← XDM».
+ * تعرض نافذة إضافة التنزيل فوق التطبيق الحالي فقط،
+ * حتى لا يحتاج المستخدم إلى فتح الواجهة الرئيسية بالكامل.
  */
 class ShareReceiverActivity : ComponentActivity() {
+
     private val permissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
 
@@ -33,30 +35,44 @@ class ShareReceiverActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val url = when (intent?.action) {
-            Intent.ACTION_SEND -> UrlUtils.extractFirstUrl(intent.getCharSequenceExtra(Intent.EXTRA_TEXT))
-            Intent.ACTION_VIEW -> intent.dataString?.takeIf { UrlUtils.isHttpUrl(it) }
+            Intent.ACTION_SEND ->
+                UrlUtils.extractFirstUrl(intent.getCharSequenceExtra(Intent.EXTRA_TEXT))
+
+            Intent.ACTION_VIEW ->
+                intent.dataString?.takeIf { UrlUtils.isHttpUrl(it) }
+
             else -> null
         }
+
         if (url == null) {
-            Toast.makeText(this, "No download link found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "لم يتم العثور على رابط للتنزيل", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        if (savedInstanceState == null) requestRuntimePermissions(this, permissions::launch)
+        if (savedInstanceState == null) {
+            requestRuntimePermissions(this, permissions::launch)
+        }
+
         val container = (application as XdmApp).container
         container.releaseQueue()
 
-        // A shared YouTube link (the app's Share button, youtu.be, shorts, a playlist) gets the YouTube sheet.
+        // روابط YouTube المشتركة، سواء من زر المشاركة أو روابط youtu.be أو المقاطع القصيرة أو قوائم التشغيل، تفتح نافذة YouTube.
         val youtube = YoutubeUrls.parse(url)
 
         setContent {
-            val settings by produceState<AppSettings?>(initialValue = null) { value = container.settings.current() }
+            val settings by produceState<AppSettings?>(initialValue = null) {
+                value = container.settings.current()
+            }
+
             val vaultReady by container.vaultLock.pinSet.collectAsState(initial = false)
+
             var link by remember { mutableStateOf(youtube) }
+
             settings?.let { s ->
                 XdmTheme(s.theme) {
                     val current = link
+
                     if (current != null) {
                         YoutubeSheet(
                             container = container,
@@ -67,7 +83,11 @@ class ShareReceiverActivity : ComponentActivity() {
                             defaultPrivate = s.savePrivateByDefault,
                             onDismiss = { finish() },
                             onDone = {
-                                Toast.makeText(this@ShareReceiverActivity, it, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    this@ShareReceiverActivity,
+                                    it,
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 finish()
                             },
                             onOpenExisting = ::openExisting,
@@ -81,7 +101,11 @@ class ShareReceiverActivity : ComponentActivity() {
                             defaultPrivate = s.savePrivateByDefault,
                             onDismiss = { finish() },
                             onAdded = {
-                                Toast.makeText(this@ShareReceiverActivity, "Download added", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    this@ShareReceiverActivity,
+                                    "تمت إضافة التنزيل",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 finish()
                             },
                             onYoutube = { link = it },
@@ -93,11 +117,16 @@ class ShareReceiverActivity : ComponentActivity() {
         }
     }
 
-    /** The duplicate dialog's "Open existing": the full app, on that download. */
+    /** خيار «فتح الموجود» في نافذة اكتشاف التنزيل المكرر: يفتح التطبيق على التنزيل نفسه. */
     private fun openExisting(id: Long) {
         startActivity(
-            Intent(this, MainActivity::class.java).setAction(MainActivity.ACTION_OPEN_DOWNLOAD)
-                .putExtra(DownloadService.EXTRA_ID, id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            Intent(this, MainActivity::class.java)
+                .setAction(MainActivity.ACTION_OPEN_DOWNLOAD)
+                .putExtra(DownloadService.EXTRA_ID, id)
+                .addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                ),
         )
     }
 }

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.olaph.xdm.core.DownloadManagerReliabilityTest" tests="30" skipped="0" failures="0" errors="0" timestamp="2026-11-21T16:39:24" hostname="runnervm0hi8g" time="4.759">
+  <properties/>
+  <testcase name="aQueuedDownloadWaitsOutsideTheWindowAndRunsWhenItOpens" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.051"/>
+  <testcase name="notEnoughRoomForThePartialFileFailsBeforeAnythingIsFetched" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.028"/>
+  <testcase name="aFailedSaveKeepsTheDownloadedFileForARetry" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.058"/>
+  <testcase name="aFullCustomFolderVolumeFailsEarlyToo" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.016"/>
+  <testcase name="anExpiredLinkIsReplacedAndTheDownloadContinuesWithoutFetchingAgain" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.167"/>
+  <testcase name="changeUrlWorksOnAPausedDownloadAndRefusesAFinishedOne" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.14"/>
+  <testcase name="aReplacementWithAnotherEtagOffersARestartAndHonoursIt" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.164"/>
+  <testcase name="startNowIgnoresTheScheduleBeforeAndDuringTheRun" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="2.389"/>
+  <testcase name="withoutAWakeHookAnOpeningWindowJustStarts" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.048"/>
+  <testcase name="aSystemPausedDownloadCanAlsoBeResumedByHand" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.098"/>
+  <testcase name="pausingForTheSystemWithNothingToDoReportsZero" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.016"/>
+  <testcase name="aFinishedDownloadIsADuplicateOnlyWhileItsFileIsThere" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.055"/>
+  <testcase name="aFailureNobodyTakesOverIsAnnouncedAsBefore" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.141"/>
+  <testcase name="turningTheScheduleOffReleasesWhatWaited" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.035"/>
+  <testcase name="aRefreshedLinkOfTheSameFileIsTakenOverAndTheDownloadFinishes" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.161"/>
+  <testcase name="aReplacementOfAnotherSizeIsReportedAsADifferentFile" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.137"/>
+  <testcase name="onlyWhileChargingWaitsForTheCharger" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.045"/>
+  <testcase name="wifiOnlyStillBeatsStartNowDuringTheSchedule" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.044"/>
+  <testcase name="aNetworkSwitchUnsticksARunningDownload" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.031"/>
+  <testcase name="aNoteFromTheSaverShowsOnTheFinishedItem" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.035"/>
+  <testcase name="anOpeningWindowWithNothingRunningHoldsTheQueueUntilAServiceReleasesIt" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.045"/>
+  <testcase name="aFileThatChangedDuringTheSwitchIsDownloadedAgainFromZero" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.032"/>
+  <testcase name="aRefreshedLinkWhoseFileChangedNeedsTheUsersAnswerAndChangesNothing" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.138"/>
+  <testcase name="anUnknownTargetVolumeIsSkippedQuietly" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.036"/>
+  <testcase name="aBrokenInterceptorStillLeavesTheFailureNotice" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.138"/>
+  <testcase name="aCancelledDownloadIsNotADuplicateAndPrivateAddsAreNotChecked" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.025"/>
+  <testcase name="theSourcePageComesFromTheCaptureOrTheReferer" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.014"/>
+  <testcase name="theSystemTimeLimitPausesEverythingCleanlyAndOnlyThatComesBack" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.184"/>
+  <testcase name="anExpiredLinkFailureCanBeTakenOverSoNoFailureNoticeIsPosted" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.138"/>
+  <testcase name="aRunningDownloadGoesBackToTheQueueWhenTheWindowCloses" classname="com.olaph.xdm.core.DownloadManagerReliabilityTest" time="0.149"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Nov 21, 2026 4:39:28 PM okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+WARNING: MockWebServer[38385] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

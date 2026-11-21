@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.olaph.xdm.engine.DownloadEngineSplitTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-21T16:39:50" hostname="runnervm0hi8g" time="0.436">
+  <properties/>
+  <testcase name="noSplitWhenTheSizeIsUnknown" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.088"/>
+  <testcase name="singleConnectionNeverSplits" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.039"/>
+  <testcase name="serverThatIgnoresTheEndOfTheRangeStillGivesAnExactFile" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.055"/>
+  <testcase name="splittingKeepsWorkingWithCappedSegments" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.082"/>
+  <testcase name="noSplitWhenTheServerHasNoRanges" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.031"/>
+  <testcase name="neverMoreRequestsInFlightThanConnections" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.044"/>
+  <testcase name="slowSegmentIsSplitAndTheRestIsFetchedByTheFreeConnection" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.062"/>
+  <testcase name="pauseRightAfterASplitThenResumeGivesTheSameFile" classname="com.olaph.xdm.engine.DownloadEngineSplitTest" time="0.034"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

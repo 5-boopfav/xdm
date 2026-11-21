@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.olaph.xdm.core.DownloadManagerYoutubeTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-11-21T16:39:36" hostname="runnervm0hi8g" time="2.156">
+  <properties/>
+  <testcase name="theRowCarriesThePinnedPlanSoAResumeUsesTheSameStreams" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.406"/>
+  <testcase name="notEnoughFreeSpaceIsReportedBeforeAnythingIsFetched" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.016"/>
+  <testcase name="everyRequestIsAChunkWithinTheCapAndCarriesYoutubeHeaders" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.227"/>
+  <testcase name="anExpiredUrlMidDownloadIsReResolvedAndTheBytesAlreadyOnDiskAreKept" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.188"/>
+  <testcase name="aFailedMergeFailsTheItemInWordsAndARetryDoesNotFetchAgain" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.189"/>
+  <testcase name="aMergeThatFinishedBeforeARestartIsNotRedone" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.006"/>
+  <testcase name="withoutAResolverYoutubeItemsFailInsteadOfCrashing" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.005"/>
+  <testcase name="progressIsOneNumberAndPauseThenResumeReResolvesAndKeepsEverythingFetched" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.157"/>
+  <testcase name="twoVideosRunSideBySideInTheNormalQueue" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.187"/>
+  <testcase name="aServerThatKeepsRefusingEndsInAPlainMessage" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.016"/>
+  <testcase name="aQualityThatYoutubeNoLongerOffersFailsInWords" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.005"/>
+  <testcase name="aNetworkHiccupDuringTheLookupIsRetried" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.189"/>
+  <testcase name="videoAndAudioAreDownloadedMergedAndSavedAsOneItem" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.138"/>
+  <testcase name="aLiveBroadcastIsRefused" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.005"/>
+  <testcase name="ageRestrictedPrivateMembersOnlyGeoBlockAndBotCheckEachGetTheirOwnMessage" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.047"/>
+  <testcase name="aNetworkThatStaysDownEndsWithTheNetworkMessage" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.005"/>
+  <testcase name="audioOnlyIsRewrittenAsAnM4aWithoutAVideoStream" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.015"/>
+  <testcase name="aPlaylistEntryPicksItsStreamsWhenItStarts" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.146"/>
+  <testcase name="deletingAPausedYoutubeItemRemovesItsParts" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.019"/>
+  <testcase name="anythingTheLibraryThrowsBecomesTheUpdateMessageNotACrash" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.035"/>
+  <testcase name="anAudioOnlyFileIsStillSavedWhenTheRewriteFails" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.015"/>
+  <testcase name="theFastProgressiveStreamIsSavedAsIsWithoutMerging" classname="com.olaph.xdm.core.DownloadManagerYoutubeTest" time="0.137"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

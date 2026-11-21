@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.olaph.xdm.engine.DownloadEngine503Test" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-21T16:39:50" hostname="runnervm0hi8g" time="0.226">
+  <properties/>
+  <testcase name="permanent503StillExhaustsABoundedBudget" classname="com.olaph.xdm.engine.DownloadEngine503Test" time="0.016"/>
+  <testcase name="pauseDuringFallbackNetworkWaitPersistsSparseProgressAndResumes" classname="com.olaph.xdm.engine.DownloadEngine503Test" time="0.107"/>
+  <testcase name="oneTransient503RetriesWithoutCancellingItsSibling" classname="com.olaph.xdm.engine.DownloadEngine503Test" time="0.015"/>
+  <testcase name="networkChangeDuringReductionStillValidatesFileIdentity" classname="com.olaph.xdm.engine.DownloadEngine503Test" time="0.014"/>
+  <testcase name="repeatedOverlap503FallsBackWithoutLosingSparseProgress" classname="com.olaph.xdm.engine.DownloadEngine503Test" time="0.064"/>
+  <testcase name="aSingleRangeWithIdleWorkersKeepsItsOriginalRetryBudget" classname="com.olaph.xdm.engine.DownloadEngine503Test" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Nov 21, 2026 4:39:50 PM okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+WARNING: MockWebServer[46669] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

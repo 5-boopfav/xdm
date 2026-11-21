@@ -20,8 +20,10 @@ import com.olaph.xdm.core.DuplicateMatch
 import com.olaph.xdm.core.DuplicateReason
 
 /**
- * One download that looks like one already in the list. A paused or failed match gets "Resume existing" as the main
- * button, any other "Open existing"; "Download again" adds it anyway (with a unique name, like any other).
+ * تنزيل يبدو أنه موجود بالفعل في القائمة.
+ * إذا كان التنزيل الموجود متوقفاً مؤقتاً أو فاشلاً، يظهر زر «استئناف الموجود» كزر رئيسي.
+ * وفي الحالات الأخرى يظهر زر «فتح الموجود».
+ * خيار «تنزيل مرة أخرى» يضيف الملف مجدداً باسم فريد.
  */
 @Composable
 fun DuplicateDialog(
@@ -32,18 +34,31 @@ fun DuplicateDialog(
     onCancel: () -> Unit,
 ) {
     val existing = match.existing
+
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("This file may already be in your list") },
+        title = {
+            Text("قد يكون هذا الملف موجوداً بالفعل في قائمتك")
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(existing.fileName, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(DuplicateCheck.describe(existing), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    existing.fileName,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    DuplicateCheck.describe(existing),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
                 Text(
                     when (match.reason) {
-                        DuplicateReason.SAME_LINK -> "Same link"
-                        DuplicateReason.SAME_NAME -> "Same file name in the same folder"
-                        DuplicateReason.SAME_SIZE -> "Same size and similar name"
+                        DuplicateReason.SAME_LINK -> "الرابط نفسه"
+                        DuplicateReason.SAME_NAME -> "اسم الملف نفسه في المجلد نفسه"
+                        DuplicateReason.SAME_SIZE -> "الحجم نفسه واسم مشابه"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -51,21 +66,37 @@ fun DuplicateDialog(
             }
         },
         confirmButton = {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.End
+            ) {
                 if (match.resumable) {
-                    Button(onClick = onResume) { Text("Resume existing") }
-                    TextButton(onClick = onOpen) { Text("Open existing") }
+                    Button(onClick = onResume) {
+                        Text("استئناف التنزيل الموجود")
+                    }
+
+                    TextButton(onClick = onOpen) {
+                        Text("فتح التنزيل الموجود")
+                    }
                 } else {
-                    Button(onClick = onOpen) { Text("Open existing") }
+                    Button(onClick = onOpen) {
+                        Text("فتح التنزيل الموجود")
+                    }
                 }
-                TextButton(onClick = onAddAgain) { Text("Download again") }
-                TextButton(onClick = onCancel) { Text("Cancel") }
+
+                TextButton(onClick = onAddAgain) {
+                    Text("تنزيل مرة أخرى")
+                }
+
+                TextButton(onClick = onCancel) {
+                    Text("إلغاء")
+                }
             }
         },
     )
 }
 
-/** Several downloads at once (a playlist), some of them already in the list: skip those, or add everything. */
+/** عدة تنزيلات دفعة واحدة (مثل قائمة تشغيل)، بعضها موجود بالفعل: تخطي المكرر أو إضافة الجميع. */
 @Composable
 fun BatchDuplicateDialog(
     check: BatchCheck<*>,
@@ -75,18 +106,35 @@ fun BatchDuplicateDialog(
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text(check.summary.orEmpty()) },
+        title = {
+            Text(check.summary.orEmpty())
+        },
         text = {
             Text(
-                if (check.duplicates == check.total) "Skipping them adds nothing." else "Skip them, or add all of them again?",
+                if (check.duplicates == check.total) {
+                    "لن تؤدي عملية التخطي إلى إضافة أي شيء."
+                } else {
+                    "هل تريد تخطي الملفات المكررة أم إضافتها جميعاً مرة أخرى؟"
+                },
                 modifier = Modifier.padding(top = 4.dp),
             )
         },
         confirmButton = {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                Button(onClick = onSkip) { Text("Skip duplicates") }
-                TextButton(onClick = onAddAll) { Text("Add all") }
-                TextButton(onClick = onCancel) { Text("Cancel") }
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.End
+            ) {
+                Button(onClick = onSkip) {
+                    Text("تخطي الملفات المكررة")
+                }
+
+                TextButton(onClick = onAddAll) {
+                    Text("إضافة الكل")
+                }
+
+                TextButton(onClick = onCancel) {
+                    Text("إلغاء")
+                }
             }
         },
     )

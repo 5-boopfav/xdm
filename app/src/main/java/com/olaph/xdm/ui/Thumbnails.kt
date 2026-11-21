@@ -31,13 +31,14 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/** A frame (or cover art) and the duration of a finished media file; [durationMs] -1 = unknown. */
+/** إطار من الفيديو أو صورة غلاف الملف الصوتي، مع مدة الملف المكتمل؛ القيمة -1 تعني أن المدة غير معروفة. */
 class MediaInfo(val image: ImageBitmap?, val durationMs: Long)
 
 /**
- * Thumbnails for finished videos (and cover art for audio): one frame via MediaMetadataRetriever, scaled down and kept
- * as a small JPEG in the app's cache, plus an in-memory cache. Private items get their own name prefix so a reset of
- * the private folder can drop them.
+ * الصور المصغرة لمقاطع الفيديو المكتملة وصور أغلفة الملفات الصوتية:
+ * استخراج إطار واحد باستخدام MediaMetadataRetriever، ثم تصغيره وحفظه بصيغة JPEG
+ * في ذاكرة التخزين المؤقت للتطبيق، بالإضافة إلى الاحتفاظ بنسخة في الذاكرة.
+ * تحصل الملفات الخاصة على بادئة اسم مستقلة، حتى يمكن حذف صورها عند إعادة ضبط المجلد الخاص.
  */
 object Thumbnails {
     private const val MAX_WIDTH = 320
@@ -54,36 +55,64 @@ object Thumbnails {
         val location = d.savedLocation ?: return null
         val key = key(d)
         memory.get(key)?.let { return it }
+
         return withContext(Dispatchers.IO) {
             gate.withPermit {
                 val dir = dir(context).apply { mkdirs() }
                 val jpg = File(dir, "$key.jpg")
                 val meta = File(dir, "$key.txt")
+
                 val info = if (meta.isFile) {
-                    MediaInfo(if (jpg.isFile) BitmapFactory.decodeFile(jpg.path)?.asImageBitmap() else null, meta.readText().toLongOrNull() ?: -1)
+                    MediaInfo(
+                        if (jpg.isFile) BitmapFactory.decodeFile(jpg.path)?.asImageBitmap() else null,
+                        meta.readText().toLongOrNull() ?: -1
+                    )
                 } else {
                     extract(context, location, MediaFiles.isVideo(d), jpg, meta)
                 }
+
                 info?.also { memory.put(key, it) }
             }
         }
     }
 
-    private fun extract(context: Context, location: String, video: Boolean, jpg: File, meta: File): MediaInfo? = runCatching {
+    private fun extract(
+        context: Context,
+        location: String,
+        video: Boolean,
+        jpg: File,
+        meta: File
+    ): MediaInfo? = runCatching {
         val r = MediaMetadataRetriever()
+
         try {
-            if (location.startsWith("content://")) r.setDataSource(context, Uri.parse(location)) else r.setDataSource(location)
-            val duration = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: -1
+            if (location.startsWith("content://")) {
+                r.setDataSource(context, Uri.parse(location))
+            } else {
+                r.setDataSource(location)
+            }
+
+            val duration =
+                r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: -1
+
             val frame: Bitmap? = if (video) {
-                // A tenth into the video (at most 10 s): the very first frame is often black.
+                // استخراج إطار عند عُشر مدة الفيديو (بحد أقصى 10 ثوانٍ)، لأن الإطار الأول غالباً ما يكون أسود.
                 val atMs = if (duration > 0) (duration / 10).coerceAtMost(10_000) else 1_000
                 r.getFrameAtTime(atMs * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC) ?: r.frameAtTime
             } else {
                 r.embeddedPicture?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
             }
+
             val small = frame?.let { scaled(it) }
-            small?.let { b -> jpg.outputStream().use { b.compress(Bitmap.CompressFormat.JPEG, 80, it) } }
+
+            small?.let { b ->
+                jpg.outputStream().use {
+                    b.compress(Bitmap.CompressFormat.JPEG, 80, it)
+                }
+            }
+
             meta.writeText(duration.toString())
+
             MediaInfo(small?.asImageBitmap(), duration)
         } finally {
             runCatching { r.release() }
@@ -92,44 +121,76 @@ object Thumbnails {
 
     private fun scaled(b: Bitmap): Bitmap {
         if (b.width <= MAX_WIDTH) return b
+
         val h = (b.height.toLong() * MAX_WIDTH / b.width).toInt().coerceAtLeast(1)
-        return Bitmap.createScaledBitmap(b, MAX_WIDTH, h, true).also { if (it !== b) b.recycle() }
+
+        return Bitmap.createScaledBitmap(b, MAX_WIDTH, h, true).also {
+            if (it !== b) b.recycle()
+        }
     }
 
-    /** Drops the cached thumbnails of [ids] (public and private variants). */
+    /** حذف الصور المصغرة المخزنة مؤقتاً للمعرّفات المحددة، سواء كانت عامة أو خاصة. */
     fun forget(context: Context, ids: Collection<Long>) {
         if (ids.isEmpty()) return
+
         memory.evictAll()
+
         val prefixes = ids.flatMap { listOf("$it-", "p$it-") }
-        dir(context).listFiles()?.filter { f -> prefixes.any { f.name.startsWith(it) } }?.forEach { it.delete() }
+
+        dir(context).listFiles()
+            ?.filter { f -> prefixes.any { f.name.startsWith(it) } }
+            ?.forEach { it.delete() }
     }
 
-    /** "Reset private folder": every private thumbnail goes. */
+    /** إعادة ضبط المجلد الخاص: حذف جميع الصور المصغرة الخاصة. */
     fun forgetPrivate(context: Context) {
         memory.evictAll()
-        dir(context).listFiles()?.filter { it.name.startsWith("p") }?.forEach { it.delete() }
+
+        dir(context).listFiles()
+            ?.filter { it.name.startsWith("p") }
+            ?.forEach { it.delete() }
     }
 }
 
-/** The thumbnail of a finished video or audio file, or [fallback] while loading / when there is none. */
+/** الصورة المصغرة لملف فيديو أو صوت مكتمل، أو عرض [fallback] أثناء التحميل أو عند عدم توفر صورة. */
 @Composable
 private fun rememberMediaInfo(d: DownloadEntity): MediaInfo? {
     val context = LocalContext.current
-    var info by remember(d.id, d.savedLocation, d.status) { mutableStateOf<MediaInfo?>(null) }
-    LaunchedEffect(d.id, d.savedLocation, d.status) { info = Thumbnails.load(context, d) }
+
+    var info by remember(d.id, d.savedLocation, d.status) {
+        mutableStateOf<MediaInfo?>(null)
+    }
+
+    LaunchedEffect(d.id, d.savedLocation, d.status) {
+        info = Thumbnails.load(context, d)
+    }
+
     return info
 }
 
 @Composable
-fun MediaThumbnail(d: DownloadEntity, modifier: Modifier, fallback: @Composable () -> Unit) {
+fun MediaThumbnail(
+    d: DownloadEntity,
+    modifier: Modifier,
+    fallback: @Composable () -> Unit
+) {
     val image = rememberMediaInfo(d)?.image
+
     if (image != null) {
-        Image(image, null, modifier.clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+        Image(
+            image,
+            null,
+            modifier.clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+        )
     } else {
-        Box(modifier) { fallback() }
+        Box(modifier) {
+            fallback()
+        }
     }
 }
 
-/** Duration of a finished media file once its thumbnail is known; -1 otherwise. */
+/** مدة ملف الوسائط المكتمل بعد معرفة صورته المصغرة؛ القيمة -1 تعني أن المدة غير معروفة. */
 @Composable
-fun mediaDuration(d: DownloadEntity): Long = rememberMediaInfo(d)?.durationMs ?: -1
+fun mediaDuration(d: DownloadEntity): Long =
+    rememberMediaInfo(d)?.durationMs ?: -1

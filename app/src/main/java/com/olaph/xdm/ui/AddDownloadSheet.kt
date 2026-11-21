@@ -70,28 +70,28 @@ private sealed interface ProbeState {
     data class Failed(val message: String) : ProbeState
 }
 
-/** "Add download" sheet shared by the main screen and the transparent share receiver. */
+/** نافذة إضافة التنزيل المشتركة بين الشاشة الرئيسية ومستقبل المشاركة. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddDownloadSheet(
     container: AppContainer,
     prefill: PendingDownload?,
     defaultConnections: Int,
-    /** A PIN exists, so the private folder can take downloads. */
+    /** يوجد رقم PIN، لذلك يمكن حفظ التنزيلات في المجلد الخاص. */
     privateAvailable: Boolean,
     defaultPrivate: Boolean,
     onDismiss: () -> Unit,
     onAdded: () -> Unit,
-    /** A pasted or typed YouTube link is handed over instead of being probed as a file. */
+    /** يتم تمرير رابط YouTube الملصق أو المكتوب بدلاً من فحصه كملف عادي. */
     onYoutube: (YoutubeLink) -> Unit = {},
-    /** "Open existing" in the duplicate dialog: show download [id] (the caller closes the sheet afterwards). */
+    /** فتح تنزيل موجود من نافذة التكرار. */
     onOpenExisting: (Long) -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Headers from the browser (Cookie, Referer, User-Agent) apply to the probe and to the whole download.
+    // ترويسات المتصفح (Cookie وReferer وUser-Agent) تُستخدم في الفحص والتنزيل بالكامل.
     val headers = prefill?.headers.orEmpty()
     val origin = DownloadHeaders.origin(prefill?.pageUrl)
     var url by rememberSaveable { mutableStateOf(prefill?.url.orEmpty()) }
@@ -104,7 +104,8 @@ fun AddDownloadSheet(
 
     val trimmed = url.trim()
     val validUrl = UrlUtils.isHttpUrl(trimmed)
-    // A playlist is downloaded segment by segment; there is no byte-range probe for it.
+
+    // تُنزّل قوائم التشغيل مقطعاً تلو الآخر، ولا تحتاج إلى فحص نطاقات البايت.
     val hls = validUrl && ((prefill?.kind == DownloadKind.HLS && trimmed == prefill.url) || MediaClassifier.isHlsUrl(trimmed))
 
     LaunchedEffect(trimmed) {
@@ -118,7 +119,7 @@ fun AddDownloadSheet(
             return@LaunchedEffect
         }
         probe = ProbeState.Loading
-        delay(500) // debounce typing
+        delay(500)
         try {
             val result = container.manager.probe(trimmed, headers)
             probe = ProbeState.Done(result)
@@ -126,15 +127,15 @@ fun AddDownloadSheet(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            probe = ProbeState.Failed(e.message ?: "Could not reach the server")
-            // Keep the browser-provided name (from Content-Disposition) when the probe can't improve on it.
+            probe = ProbeState.Failed(e.message ?: "تعذر الاتصال بالخادم")
+            // الاحتفاظ بالاسم القادم من المتصفح عند تعذر تحسينه بواسطة الفحص.
             if (!nameEdited && (trimmed != prefill?.url || fileName.isBlank())) {
                 fileName = FilenameUtils.resolve(null, trimmed, null)
             }
         }
     }
 
-    // A download that looks like one already in the list waits here for the user's answer.
+    // ينتظر التنزيل المشابه لتنزيل موجود في القائمة إجابة المستخدم.
     var duplicate by remember { mutableStateOf<Pair<DuplicateMatch, Boolean>?>(null) }
 
     suspend fun addNow(startNow: Boolean) {
@@ -154,9 +155,14 @@ fun AddDownloadSheet(
         scope.launch {
             val result = (probe as? ProbeState.Done)?.result
             val name = fileName.ifBlank { result?.fileName ?: FilenameUtils.resolve(null, trimmed, null) }
-            // A playlist's size is only an estimate: it says nothing about which file it is.
+
+            // حجم قائمة التشغيل تقديري فقط، ولا يحدد الملف نفسه.
             val size = if (hls) -1L else result?.contentLength ?: prefill?.contentLength?.takeIf { trimmed == prefill.url } ?: -1L
-            val match = container.manager.findDuplicate(DuplicateCandidate(trimmed, name, size, isPrivate = savePrivate && privateAvailable))
+
+            val match = container.manager.findDuplicate(
+                DuplicateCandidate(trimmed, name, size, isPrivate = savePrivate && privateAvailable)
+            )
+
             if (match == null) {
                 addNow(startNow)
             } else {
@@ -173,10 +179,18 @@ fun AddDownloadSheet(
             onResume = {
                 duplicate = null
                 container.manager.resume(match.existing.id)
-                Toast.makeText(appContext, "Resuming ${match.existing.fileName}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    appContext,
+                    "جارٍ استئناف ${match.existing.fileName}",
+                    Toast.LENGTH_SHORT
+                ).show()
                 onDismiss()
             },
-            onOpen = { duplicate = null; onOpenExisting(match.existing.id); onDismiss() },
+            onOpen = {
+                duplicate = null
+                onOpenExisting(match.existing.id)
+                onDismiss()
+            },
             onAddAgain = {
                 duplicate = null
                 adding = true
@@ -196,10 +210,12 @@ fun AddDownloadSheet(
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Add download", style = MaterialTheme.typography.titleLarge)
+            Text("إضافة تنزيل", style = MaterialTheme.typography.titleLarge)
+
             if (origin != null) {
                 Text(
-                    "From: $origin" + if (headers.containsKey("Cookie")) " · signed-in session is forwarded" else "",
+                    "المصدر: $origin" +
+                        if (headers.containsKey("Cookie")) " · سيتم تمرير جلسة تسجيل الدخول" else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -208,15 +224,22 @@ fun AddDownloadSheet(
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = { Text("URL") },
+                label = { Text("الرابط") },
                 singleLine = false,
                 maxLines = 3,
                 isError = url.isNotBlank() && !validUrl,
-                supportingText = { if (url.isNotBlank() && !validUrl) Text("Enter a valid http(s) link") },
+                supportingText = {
+                    if (url.isNotBlank() && !validUrl) {
+                        Text("أدخل رابط HTTP أو HTTPS صالحاً")
+                    }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 trailingIcon = {
                     IconButton(onClick = { pasteInto(context) { url = it } }) {
-                        Icon(Icons.Filled.ContentPaste, contentDescription = "Paste")
+                        Icon(
+                            Icons.Filled.ContentPaste,
+                            contentDescription = "لصق"
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -225,42 +248,63 @@ fun AddDownloadSheet(
             if (hls) {
                 val estimate = prefill?.contentLength?.takeIf { it > 0 && trimmed == prefill.url }
                 Text(
-                    "HLS stream · segments are fetched in parallel and joined into one file (no conversion)" +
-                        (estimate?.let { " · " + (if (prefill?.lengthEstimated == true) "~" else "") + Formatters.bytes(it) } ?: ""),
+                    "بث HLS · سيتم جلب المقاطع بالتوازي ودمجها في ملف واحد دون تحويل" +
+                        (estimate?.let {
+                            " · " + (if (prefill?.lengthEstimated == true) "~" else "") + Formatters.bytes(it)
+                        } ?: ""),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
             when (val p = probe) {
                 ProbeState.Idle -> Unit
+
                 ProbeState.Loading -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
                     val hint = prefill?.contentLength?.takeIf { it > 0 && trimmed == prefill.url }
                     Text(
-                        "  Checking link…" + if (hint != null) " (${Formatters.bytes(hint)})" else "",
+                        "  جارٍ فحص الرابط..." +
+                            if (hint != null) " (${Formatters.bytes(hint)})" else "",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
+
                 is ProbeState.Done -> {
                     val r = p.result
                     Text(
                         buildString {
-                            append("Size: ").append(if (r.contentLength > 0) Formatters.bytes(r.contentLength) else "unknown")
+                            append("الحجم: ")
+                                .append(if (r.contentLength > 0) Formatters.bytes(r.contentLength) else "غير معروف")
+
                             append(" · ").append(
                                 when {
-                                    !r.resumable -> "no resume support, single connection"
-                                    r.contentLength < SegmentPlanner.SPLIT_THRESHOLD -> "small file, single connection"
-                                    else -> "resumable"
+                                    !r.resumable -> "لا يدعم الاستئناف، اتصال واحد"
+                                    r.contentLength < SegmentPlanner.SPLIT_THRESHOLD -> "ملف صغير، اتصال واحد"
+                                    else -> "يدعم الاستئناف"
                                 },
                             )
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (r.resumable) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.tertiary,
+                        color = if (r.resumable) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.tertiary
+                        },
                     )
                 }
+
                 is ProbeState.Failed -> Text(
-                    "Could not check the link (${p.message}). You can still add it." +
-                        (prefill?.contentLength?.takeIf { it > 0 && trimmed == prefill.url }?.let { " Size: ${Formatters.bytes(it)}." } ?: ""),
+                    "تعذر فحص الرابط (${p.message}). لا يزال بإمكانك إضافته." +
+                        (
+                            prefill?.contentLength
+                                ?.takeIf { it > 0 && trimmed == prefill.url }
+                                ?.let { " الحجم: ${Formatters.bytes(it)}." }
+                                ?: ""
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -268,22 +312,27 @@ fun AddDownloadSheet(
 
             OutlinedTextField(
                 value = fileName,
-                onValueChange = { fileName = it; nameEdited = true },
-                label = { Text("File name") },
+                onValueChange = {
+                    fileName = it
+                    nameEdited = true
+                },
+                label = { Text("اسم الملف") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             val resumable = hls || (probe as? ProbeState.Done)?.result?.resumable != false
+
             Column {
                 Text(
                     when {
-                        hls -> "Parallel segments: $connections"
-                        resumable -> "Connections: $connections"
-                        else -> "Connections: 1 (server does not allow more)"
+                        hls -> "المقاطع المتوازية: $connections"
+                        resumable -> "عدد الاتصالات: $connections"
+                        else -> "عدد الاتصالات: 1 (الخادم لا يسمح بالمزيد)"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                 )
+
                 Slider(
                     value = connections.toFloat(),
                     onValueChange = { connections = it.toInt() },
@@ -293,38 +342,68 @@ fun AddDownloadSheet(
                 )
             }
 
-            PrivateCheckbox(checked = savePrivate && privateAvailable, available = privateAvailable, onChange = { savePrivate = it })
+            PrivateCheckbox(
+                checked = savePrivate && privateAvailable,
+                available = privateAvailable,
+                onChange = { savePrivate = it }
+            )
 
             Spacer(Modifier.height(4.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 OutlinedButton(
                     onClick = { submit(false) },
                     enabled = validUrl && !adding,
                     modifier = Modifier.weight(1f),
-                ) { Text("Add to queue") }
+                ) {
+                    Text("إضافة إلى قائمة الانتظار")
+                }
+
                 Button(
                     onClick = { submit(true) },
                     enabled = validUrl && !adding,
                     modifier = Modifier.weight(1f),
-                ) { Text("Start now") }
+                ) {
+                    Text("ابدأ الآن")
+                }
             }
         }
     }
 }
 
-/** "Save to private folder", shared by the add, browser video and YouTube sheets. */
+/** خيار الحفظ في المجلد الخاص، مشترك بين نوافذ التنزيل والمتصفح وYouTube. */
 @Composable
-fun PrivateCheckbox(checked: Boolean, available: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+fun PrivateCheckbox(
+    checked: Boolean,
+    available: Boolean,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier.fillMaxWidth().clickable(enabled = available) { onChange(!checked) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = checked, onCheckedChange = onChange, enabled = available)
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onChange,
+            enabled = available
+        )
+
         Column {
-            Text("Save to private folder", style = MaterialTheme.typography.bodyMedium)
             Text(
-                if (available) "Hidden from the gallery and other apps, behind your PIN"
-                else "Set up the private folder first (lock icon in Downloads)",
+                "الحفظ في المجلد الخاص",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
+                if (available) {
+                    "مخفي عن المعرض والتطبيقات الأخرى ومحمي برقم PIN"
+                } else {
+                    "قم بإعداد المجلد الخاص أولاً (أيقونة القفل في التنزيلات)"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

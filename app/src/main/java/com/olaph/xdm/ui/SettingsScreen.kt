@@ -107,6 +107,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 }
                 Switch(checked = settings.wifiOnly, onCheckedChange = vm::setWifiOnly)
             }
+
             Row(
                 Modifier.fillMaxWidth().clickable { vm.setResumeAfterRestart(!settings.resumeAfterRestart) }.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -140,6 +141,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             Text("المجلد الخاص", style = MaterialTheme.typography.titleMedium)
+
             Row(
                 Modifier.fillMaxWidth().clickable { vm.setSavePrivateByDefault(!settings.savePrivateByDefault) }.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -154,12 +156,14 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 }
                 Switch(checked = settings.savePrivateByDefault, onCheckedChange = vm::setSavePrivateByDefault)
             }
+
             Text("قفل المجلد الخاص", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
             Text(
-                "عند انتقال بحمد إلى الخلفية. كما يتم قفله دائماً عند إطفاء الشاشة.",
+                "يُقفل المجلد الخاص عند انتقال بحمد إلى الخلفية. كما يتم قفله دائماً عند إطفاء الشاشة.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
             AutoLockDelay.entries.forEach { delay ->
                 Row(
                     Modifier.fillMaxWidth().clickable { vm.setAutoLockDelay(delay) },
@@ -199,6 +203,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                     Text(engine.label)
                 }
             }
+
             Row(
                 Modifier.fillMaxWidth().clickable { vm.setInterceptDownloads(!settings.interceptDownloads) }.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -213,6 +218,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 }
                 Switch(checked = settings.interceptDownloads, onCheckedChange = vm::setInterceptDownloads)
             }
+
             Row(
                 Modifier.fillMaxWidth().clickable { vm.setConvertHlsToMp4(!settings.convertHlsToMp4) }.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -228,6 +234,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 }
                 Switch(checked = settings.convertHlsToMp4, onCheckedChange = vm::setConvertHlsToMp4)
             }
+
             Row(
                 Modifier.fillMaxWidth().clickable { vm.setAutoRefreshLinks(!settings.autoRefreshLinks) }.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -250,6 +257,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
             YoutubeQuality.entries.forEach { q ->
                 Row(
                     Modifier.fillMaxWidth().clickable { vm.setYoutubeQuality(q) },
@@ -269,14 +277,19 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
 
             CrashReportSettings(vm)
             Spacer(Modifier.height(16.dp))
+
             var licensesOpen by remember { mutableStateOf(false) }
+
             Text(
                 "حول التطبيق والتراخيص",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.fillMaxWidth().clickable { licensesOpen = true }.padding(vertical = 8.dp),
             )
+
             if (licensesOpen) LicensesDialog(vm) { licensesOpen = false }
+
             Spacer(Modifier.height(8.dp))
+
             Text(
                 "بحمد ${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,
@@ -292,6 +305,7 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
     val update by vm.filterListsUpdate.collectAsStateWithLifecycle()
 
     Text("حاجب الإعلانات", style = MaterialTheme.typography.titleMedium)
+
     Row(
         Modifier.fillMaxWidth().clickable { vm.setBlockAds(!settings.blockAds) }.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -308,6 +322,7 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
     }
 
     Text("حظر النوافذ المنبثقة", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+
     Text(
         when (settings.popupMode) {
             PopupMode.OFF -> "يُسمح للصفحات بفتح نوافذ جديدة."
@@ -317,9 +332,13 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         PopupMode.entries.forEach { mode ->
-            Row(Modifier.clickable { vm.setPopupMode(mode) }.padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.clickable { vm.setPopupMode(mode) }.padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 RadioButton(selected = settings.popupMode == mode, onClick = { vm.setPopupMode(mode) })
                 Text(
                     when (mode) {
@@ -338,13 +357,21 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
             when {
                 info.loading -> "جارٍ التحميل…"
                 !info.loaded -> "لم يتم التحميل"
-                else -> "%,d قاعدة نشطة · اكتمل التحميل خلال %.1f ثانية%s".format(info.totalRules, info.loadMillis / 1000.0, if (info.fromCache) " (من الذاكرة المؤقتة)" else "")
+                else -> "%,d قاعدة نشطة · اكتمل التحميل خلال %.1f ثانية%s".format(
+                    info.totalRules,
+                    info.loadMillis / 1000.0,
+                    if (info.fromCache) " (من الذاكرة المؤقتة)" else ""
+                )
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    val dateFormat = remember { java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM) }
+
+    val dateFormat = remember {
+        java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM)
+    }
+
     info.lists.forEach { list ->
         Row(
             Modifier.fillMaxWidth().clickable { vm.setFilterListEnabled(list.id, !list.enabled) }.padding(vertical = 4.dp),
@@ -352,56 +379,118 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
         ) {
             Column(Modifier.weight(1f)) {
                 Text(list.title, style = MaterialTheme.typography.bodyLarge)
-                val date = if (list.updatedAtMillis > 0) dateFormat.format(java.util.Date(list.updatedAtMillis)) else null
+
+                val date =
+                    if (list.updatedAtMillis > 0)
+                        dateFormat.format(java.util.Date(list.updatedAtMillis))
+                    else null
+
                 Text(
                     when {
                         !list.enabled -> "متوقف"
-                        !info.loaded -> "…"
+                        !info.loaded -> "جارٍ الانتظار…"
                         !list.updatable -> "%,d قاعدة · مدمجة في التطبيق".format(list.ruleCount)
                         date == null -> "%,d قاعدة".format(list.ruleCount)
-                        else -> "%,d قاعدة · %s %s".format(list.ruleCount, if (list.bundled) "نسخة من" else "آخر تحديث:", date)
+                        else -> "%,d قاعدة · %s %s".format(
+                            list.ruleCount,
+                            if (list.bundled) "نسخة من" else "آخر تحديث:",
+                            date
+                        )
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Switch(checked = list.enabled, onCheckedChange = { vm.setFilterListEnabled(list.id, it) })
+
+            Switch(
+                checked = list.enabled,
+                onCheckedChange = { vm.setFilterListEnabled(list.id, it) }
+            )
         }
     }
+
     Column(Modifier.padding(vertical = 4.dp)) {
         when (val u = update) {
-            is UpdateState.Failed -> Text(u.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            is UpdateState.Failed ->
+                Text(
+                    u.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+
             is UpdateState.Done -> {
-                Text("تم تحديث %d قائمة · إجمالي القواعد النشطة: %,d".format(u.updated, u.totalRules), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "تم تحديث %d قائمة · إجمالي القواعد النشطة: %,d".format(u.updated, u.totalRules),
+                    style = MaterialTheme.typography.bodySmall
+                )
+
                 u.failures.forEach { (title, reason) ->
-                    Text("$title: $reason", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        "$title: $reason",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
+
             else -> Unit
         }
+
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { vm.clearFilterListsResult(); vm.updateFilterLists() }, enabled = update !is UpdateState.Running) {
-                Text(if (update is UpdateState.Running) "جارٍ التحديث…" else "تحديث قوائم التصفية")
+            TextButton(
+                onClick = {
+                    vm.clearFilterListsResult()
+                    vm.updateFilterLists()
+                },
+                enabled = update !is UpdateState.Running
+            ) {
+                Text(
+                    if (update is UpdateState.Running)
+                        "جارٍ التحديث…"
+                    else
+                        "تحديث قوائم التصفية"
+                )
             }
-            if (update is UpdateState.Running) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+
+            if (update is UpdateState.Running) {
+                CircularProgressIndicator(
+                    Modifier.size(18.dp),
+                    strokeWidth = 2.dp
+                )
+            }
         }
+
         if (settings.wifiOnly) {
-            Text("التنزيل عبر Wi-Fi فقط (الخيار مفعّل)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "التنزيل عبر Wi-Fi فقط (الخيار مفعّل)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 
     val sites = settings.adAllowedSites.sorted()
+
     Column(Modifier.padding(vertical = 8.dp)) {
         Text("المواقع المسموح بها (${sites.size})", style = MaterialTheme.typography.titleSmall)
+
         Text(
-            if (sites.isEmpty()) "ستظهر هنا المواقع التي سمحت بظهور الإعلانات فيها." else "لا يتم حظر الإعلانات في هذه المواقع.",
+            if (sites.isEmpty())
+                "ستظهر هنا المواقع التي سمحت بظهور الإعلانات فيها."
+            else
+                "لا يتم حظر الإعلانات في هذه المواقع.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+
     sites.forEach { site ->
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(site, Modifier.weight(1f).padding(start = 8.dp))
+
             IconButton(onClick = { vm.removeAllowedSite(site) }) {
                 Icon(Icons.Filled.Close, "إزالة $site")
             }
@@ -419,6 +508,7 @@ private fun CrashReportSettings(vm: MainViewModel) {
     if (!vm.crashReportsAvailable) {
         Column(Modifier.padding(vertical = 8.dp)) {
             Text("إرسال تقارير الأعطال", style = MaterialTheme.typography.titleSmall)
+
             Text(
                 "لم يتم إعداد تقارير الأعطال في هذا الإصدار.",
                 style = MaterialTheme.typography.bodySmall,
@@ -434,6 +524,7 @@ private fun CrashReportSettings(vm: MainViewModel) {
     ) {
         Column(Modifier.weight(1f)) {
             Text("إرسال تقارير الأعطال", style = MaterialTheme.typography.titleSmall)
+
             Text(
                 "إذا توقف التطبيق عن العمل بشكل مفاجئ، فسيتم إرسال تفاصيل الخطأ إلى المطور عند تشغيل التطبيق مرة أخرى. " +
                     "لا يتم تضمين الروابط أو عناوين الصفحات أو أسماء الملفات أو سجل التصفح.",
@@ -441,11 +532,14 @@ private fun CrashReportSettings(vm: MainViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+
         Switch(checked = enabled, onCheckedChange = vm::setCrashReportsEnabled)
     }
+
     TextButton(
         onClick = {
             sending = true
+
             scope.launch {
                 val message = when (vm.sendTestCrashReport()) {
                     TestReportResult.SENT -> "تم إرسال التقرير التجريبي."
@@ -454,13 +548,19 @@ private fun CrashReportSettings(vm: MainViewModel) {
                     TestReportResult.DISABLED -> "فعّل خيار إرسال تقارير الأعطال أولاً."
                     TestReportResult.UNAVAILABLE -> "لم يتم إعداد تقارير الأعطال في هذا الإصدار."
                 }
+
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 sending = false
             }
         },
         enabled = enabled && !sending,
     ) {
-        Text(if (sending) "جارٍ الإرسال…" else "إرسال تقرير تجريبي")
+        Text(
+            if (sending)
+                "جارٍ الإرسال…"
+            else
+                "إرسال تقرير تجريبي"
+        )
     }
 }
 
@@ -475,10 +575,17 @@ private fun LicensesDialog(vm: MainViewModel, onDismiss: () -> Unit) {
             "رخصة Mozilla العامة الإصدار 2.0 (قائمة النطاقات العامة)" to vm.licenseText("licenses/MPL-2.0.txt"),
         )
     }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("إغلاق") } },
-        title = { Text("حول التطبيق والتراخيص") },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("إغلاق")
+            }
+        },
+        title = {
+            Text("حول التطبيق والتراخيص")
+        },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 texts.forEach { (title, body) ->
@@ -493,12 +600,21 @@ private fun LicensesDialog(vm: MainViewModel, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun SliderSetting(title: String, value: Int, range: IntRange, onCommit: (Int) -> Unit) {
-    // Keep the thumb responsive while dragging; only write to DataStore when released.
+private fun SliderSetting(
+    title: String,
+    value: Int,
+    range: IntRange,
+    onCommit: (Int) -> Unit
+) {
+    // إبقاء مؤشر التمرير سريع الاستجابة أثناء السحب،
+    // وحفظ القيمة في DataStore عند الانتهاء فقط.
     var dragging by remember { mutableFloatStateOf(Float.NaN) }
+
     val shown = if (dragging.isNaN()) value else dragging.toInt()
+
     Column(Modifier.padding(vertical = 8.dp)) {
         Text("$title: $shown", style = MaterialTheme.typography.titleSmall)
+
         Slider(
             value = shown.toFloat(),
             onValueChange = { dragging = it },
@@ -515,8 +631,10 @@ private fun SliderSetting(title: String, value: Int, range: IntRange, onCommit: 
 @Composable
 private fun UserAgentSetting(current: String, onSave: (String) -> Unit) {
     var text by remember(current) { mutableStateOf(current) }
+
     Column {
         Text("معرّف المتصفح (User-Agent)", style = MaterialTheme.typography.titleSmall)
+
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
@@ -524,12 +642,20 @@ private fun UserAgentSetting(current: String, onSave: (String) -> Unit) {
             minLines = 2,
             maxLines = 4,
         )
+
         Row {
-            TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank() && text != current) {
+            TextButton(
+                onClick = { onSave(text) },
+                enabled = text.isNotBlank() && text != current
+            ) {
                 Text("حفظ")
             }
-            TextButton(onClick = { onSave(AppSettings.DEFAULT_USER_AGENT) }, enabled = current != AppSettings.DEFAULT_USER_AGENT) {
-                Text("إعادة ضبط إلى إعداد Chrome الافتراضي")
+
+            TextButton(
+                onClick = { onSave(AppSettings.DEFAULT_USER_AGENT) },
+                enabled = current != AppSettings.DEFAULT_USER_AGENT
+            ) {
+                Text("استعادة إعداد Chrome الافتراضي")
             }
         }
     }

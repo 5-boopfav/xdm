@@ -134,7 +134,7 @@ fun BrowserScreen(vm: BrowserViewModel, onOpenSettings: () -> Unit) {
     val request = vm.fileChooser
     LaunchedEffect(request) {
         if (request == null || request.launched) return@LaunchedEffect
-        request.launched = true // survives recomposition / rotation while the picker is open
+        request.launched = true
         try {
             chooser.launch(request.params.createIntent())
         } catch (_: ActivityNotFoundException) {
@@ -155,21 +155,25 @@ private fun BrowserTabPage(vm: BrowserViewModel, tab: BrowserTab, onOpenSettings
     var shieldOpen by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val notice = vm.notice
+
     LaunchedEffect(notice) {
         if (notice == null) return@LaunchedEffect
         val result = snackbar.showSnackbar(
             message = when (notice.kind) {
-                BlockNotice.Kind.POPUP -> "Pop-up blocked"
-                BlockNotice.Kind.NAVIGATION -> "Blocked: ${UrlInput.displayHost(notice.url) ?: "ad page"}"
+                BlockNotice.Kind.POPUP -> "تم حظر نافذة منبثقة"
+                BlockNotice.Kind.NAVIGATION -> "تم حظر الصفحة: ${UrlInput.displayHost(notice.url) ?: "صفحة إعلانية"}"
             },
-            actionLabel = if (notice.kind == BlockNotice.Kind.POPUP) "Open" else "Open anyway",
+            actionLabel = if (notice.kind == BlockNotice.Kind.POPUP) "فتح" else "فتح على أي حال",
             withDismissAction = true,
             duration = SnackbarDuration.Short,
         )
         if (result == SnackbarResult.ActionPerformed) vm.openNotice(notice) else vm.dismissNotice(notice)
     }
+
     Column(Modifier.fillMaxSize()) {
-        vm.refreshTarget?.let { RefreshBanner(it.fileName, it.canAutoMatch, vm.refreshSlow, onCancel = vm::cancelRefresh) }
+        vm.refreshTarget?.let {
+            RefreshBanner(it.fileName, it.canAutoMatch, vm.refreshSlow, onCancel = vm::cancelRefresh)
+        }
         AddressBar(
             tab = tab,
             onSubmit = vm::load,
@@ -179,7 +183,10 @@ private fun BrowserTabPage(vm: BrowserViewModel, tab: BrowserTab, onOpenSettings
         )
         Box(Modifier.fillMaxWidth().height(3.dp)) {
             if (tab.loading) {
-                LinearProgressIndicator(progress = { (tab.progress / 100f).coerceIn(0.02f, 1f) }, modifier = Modifier.fillMaxWidth())
+                LinearProgressIndicator(
+                    progress = { (tab.progress / 100f).coerceIn(0.02f, 1f) },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
         if (tab.findActive) FindBar(vm, tab)
@@ -188,13 +195,16 @@ private fun BrowserTabPage(vm: BrowserViewModel, tab: BrowserTab, onOpenSettings
                 BrowserHome(vm, tab)
             } else {
                 key(tab.id, tab.webViewEpoch) { WebViewHost(vm, tab) }
-                if (vm.fullscreen == null) MediaButton(vm, tab, Modifier.align(Alignment.BottomEnd).padding(16.dp))
+                if (vm.fullscreen == null) {
+                    MediaButton(vm, tab, Modifier.align(Alignment.BottomEnd).padding(16.dp))
+                }
             }
             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
         }
         HorizontalDivider()
         BottomToolbar(vm, tab, onOpenSettings)
     }
+
     vm.fullscreen?.let { FullscreenVideoHost(vm, it) }
     if (tab.mediaSheetOpen && vm.fullscreen == null) MediaSheet(vm, tab)
     if (shieldOpen) AdShieldSheet(vm, tab) { shieldOpen = false }
@@ -202,27 +212,34 @@ private fun BrowserTabPage(vm: BrowserViewModel, tab: BrowserTab, onOpenSettings
 }
 
 /**
- * Shown while the browser looks for a new link for a download. With a known size the page's files are checked by
- * themselves; without one, or when that finds nothing, the user starts the same download again.
+ * Shown while the browser looks for a new link for a download.
  */
 @Composable
 private fun RefreshBanner(fileName: String, automatic: Boolean, slow: Boolean, onCancel: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.tertiaryContainer, contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     when {
-                        !automatic -> "Start the same download again to refresh the link"
-                        slow -> "No matching link yet. Tap play on the video, or start the same download again."
-                        else -> "Looking for a new link for $fileName... If nothing happens, tap play on the video."
+                        !automatic -> "أعد بدء التنزيل نفسه لتحديث الرابط."
+                        slow -> "لم يتم العثور على رابط مطابق بعد. اضغط تشغيل الفيديو أو أعد بدء التنزيل نفسه."
+                        else -> "جارٍ البحث عن رابط جديد للملف $fileName... إذا لم يحدث شيء، اضغط تشغيل الفيديو."
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (!automatic || slow) Text(fileName, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (!automatic || slow) {
+                    Text(fileName, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
-            TextButton(onClick = onCancel) { Text("Cancel") }
+            TextButton(onClick = onCancel) { Text("إلغاء") }
         }
     }
 }
@@ -234,39 +251,48 @@ private fun AdShieldSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -
     val host = com.olaph.xdm.adblock.HostNames.hostOf(tab.url)
     val allowed = vm.isSiteAllowed(tab)
     val masterOn = vm.settings.blockAds
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
         Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
-            Text("Ad blocker", style = MaterialTheme.typography.titleLarge)
+            Text("حاجب الإعلانات", style = MaterialTheme.typography.titleLarge)
             Text(host.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(16.dp))
+
             when {
-                !masterOn -> Text("Ad blocking is turned off in Settings.", style = MaterialTheme.typography.bodyLarge)
-                allowed -> Text("Ads are allowed on ${host.orEmpty()}.", style = MaterialTheme.typography.bodyLarge)
+                !masterOn -> Text("حظر الإعلانات متوقف من الإعدادات.", style = MaterialTheme.typography.bodyLarge)
+                allowed -> Text("الإعلانات مسموح بها في موقع ${host.orEmpty()}.", style = MaterialTheme.typography.bodyLarge)
                 else -> {
                     Text(
-                        "${tab.blockedCount} blocked on this page",
+                        "تم حظر ${tab.blockedCount} طلباً في هذه الصفحة",
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.height(8.dp))
-                    ShieldCountRow("Requests (ads, trackers)", tab.blockedRequests)
-                    ShieldCountRow("Pop-ups", tab.blockedPopups)
-                    ShieldCountRow("Redirects", tab.blockedRedirects)
+                    ShieldCountRow("الطلبات (الإعلانات وأدوات التتبع)", tab.blockedRequests)
+                    ShieldCountRow("النوافذ المنبثقة", tab.blockedPopups)
+                    ShieldCountRow("عمليات إعادة التوجيه", tab.blockedRedirects)
                 }
             }
+
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = host != null) { vm.setSiteAllowed(tab, !allowed); onDismiss() }
+                    .clickable(enabled = host != null) {
+                        vm.setSiteAllowed(tab, !allowed)
+                        onDismiss()
+                    }
                     .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Allow ads on this site", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                Text("السماح بالإعلانات في هذا الموقع", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                 Switch(checked = allowed, onCheckedChange = null, enabled = host != null)
             }
             Text(
-                "The page reloads when you change this.",
+                "ستتم إعادة تحميل الصفحة عند تغيير هذا الخيار.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -294,13 +320,17 @@ private fun WebViewHost(vm: BrowserViewModel, tab: BrowserTab) {
             if (wv.parent !== frame) {
                 (wv.parent as? ViewGroup)?.removeView(wv)
                 frame.removeAllViews()
-                // Dialogs and pickers spawned by the WebView need the activity while it is on screen.
                 (wv.context as? MutableContextWrapper)?.baseContext = frame.context
-                frame.addView(wv, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                frame.addView(
+                    wv,
+                    FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                )
             }
         },
         onRelease = { frame ->
-            // Keep the WebView (and its page) alive in the view model; just let go of the activity.
             (frame.getChildAt(0) as? WebView)?.let { wv ->
                 (wv.context as? MutableContextWrapper)?.baseContext = vm.appContext
             }
@@ -317,9 +347,7 @@ private fun WebViewHost(vm: BrowserViewModel, tab: BrowserTab) {
 }
 
 /**
- * The page's fullscreen video, laid over the whole window on black: system bars hidden (they come back on a swipe),
- * screen kept on, and any orientation allowed. Leaving this composition (back, other tab, other screen) ends it.
- * Rotation does not recreate the activity (configChanges), so the video keeps playing in place.
+ * The page's fullscreen video, laid over the whole window on black.
  */
 @Composable
 private fun FullscreenVideoHost(vm: BrowserViewModel, fs: FullscreenVideo) {
@@ -330,11 +358,23 @@ private fun FullscreenVideoHost(vm: BrowserViewModel, fs: FullscreenVideo) {
         val frame = FrameLayout(activity).apply {
             setBackgroundColor(android.graphics.Color.BLACK)
             keepScreenOn = true
-            isClickable = true // touches the video does not use must not reach the page underneath
+            isClickable = true
         }
         (fs.view.parent as? ViewGroup)?.removeView(fs.view)
-        frame.addView(fs.view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        decor.addView(frame, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        frame.addView(
+            fs.view,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        decor.addView(
+            frame,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
 
         val bars = WindowCompat.getInsetsController(window, decor)
         val previousBehavior = bars.systemBarsBehavior
@@ -378,7 +418,9 @@ private fun AddressBar(
     val url = tab.url
     val secure = url?.startsWith("https://", ignoreCase = true) == true
 
-    LaunchedEffect(editing) { if (editing) focus.requestFocus() }
+    LaunchedEffect(editing) {
+        if (editing) focus.requestFocus()
+    }
 
     Surface(
         shape = RoundedCornerShape(28.dp),
@@ -394,8 +436,8 @@ private fun AddressBar(
                     else -> Icons.Filled.LockOpen
                 },
                 contentDescription = when {
-                    secure -> "Secure connection (HTTPS)"
-                    url?.startsWith("http://") == true -> "Not secure (HTTP)"
+                    secure -> "اتصال آمن (HTTPS)"
+                    url?.startsWith("http://") == true -> "اتصال غير آمن (HTTP)"
                     else -> null
                 },
                 tint = if (url != null && !secure && !tab.showHome && url.startsWith("http://")) {
@@ -405,6 +447,7 @@ private fun AddressBar(
                 },
                 modifier = Modifier.size(18.dp),
             )
+
             if (editing) {
                 BasicTextField(
                     value = text,
@@ -423,10 +466,16 @@ private fun AddressBar(
                         .padding(horizontal = 10.dp, vertical = 12.dp)
                         .focusRequester(focus)
                         .onFocusChanged {
-                            if (it.isFocused) hadFocus = true else if (hadFocus) { editing = false; hadFocus = false }
+                            if (it.isFocused) hadFocus = true
+                            else if (hadFocus) {
+                                editing = false
+                                hadFocus = false
+                            }
                         },
                 )
-                IconButton(onClick = { text = TextFieldValue("") }) { Icon(Icons.Filled.Close, "Clear") }
+                IconButton(onClick = { text = TextFieldValue("") }) {
+                    Icon(Icons.Filled.Close, "مسح")
+                }
             } else {
                 Column(
                     Modifier
@@ -439,9 +488,18 @@ private fun AddressBar(
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 ) {
                     if (tab.showHome || url == null) {
-                        Text("Search or enter address", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        Text(
+                            "ابحث أو أدخل عنوان موقع",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
                     } else {
-                        Text(tab.displayTitle, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            tab.displayTitle,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text(
                             url,
                             style = MaterialTheme.typography.bodySmall,
@@ -451,24 +509,33 @@ private fun AddressBar(
                         )
                     }
                 }
+
                 if (!tab.showHome && url != null) {
                     if (UrlUtils.isHttpUrl(url)) {
                         IconButton(onClick = onShield) {
                             BadgedBox(badge = {
                                 if (shieldActive && tab.blockedCount > 0) {
-                                    Badge { Text(if (tab.blockedCount > 99) "99+" else tab.blockedCount.toString()) }
+                                    Badge {
+                                        Text(if (tab.blockedCount > 99) "99+" else tab.blockedCount.toString())
+                                    }
                                 }
                             }) {
                                 Icon(
                                     if (shieldActive) Icons.Filled.Shield else Icons.Outlined.Shield,
-                                    contentDescription = if (shieldActive) "Ad blocker: ${tab.blockedCount} blocked" else "Ad blocker off for this site",
-                                    tint = if (shieldActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    contentDescription = if (shieldActive) {
+                                        "حاجب الإعلانات: تم حظر ${tab.blockedCount}"
+                                    } else {
+                                        "حاجب الإعلانات متوقف لهذا الموقع"
+                                    },
+                                    tint = if (shieldActive) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                     }
                     IconButton(onClick = onReloadOrStop) {
-                        if (tab.loading) Icon(Icons.Filled.Close, "Stop") else Icon(Icons.Filled.Refresh, "Reload")
+                        if (tab.loading) Icon(Icons.Filled.Close, "إيقاف")
+                        else Icon(Icons.Filled.Refresh, "إعادة تحميل")
                     }
                 }
             }
@@ -482,6 +549,7 @@ private fun AddressBar(
 private fun FindBar(vm: BrowserViewModel, tab: BrowserTab) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
+
     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         BasicTextField(
             value = tab.findQuery,
@@ -493,16 +561,27 @@ private fun FindBar(vm: BrowserViewModel, tab: BrowserTab) {
             keyboardActions = KeyboardActions(onSearch = { vm.findNext(tab, true) }),
             modifier = Modifier.weight(1f).focusRequester(focus).padding(vertical = 10.dp),
             decorationBox = { inner ->
-                if (tab.findQuery.isEmpty()) Text("Find in page", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (tab.findQuery.isEmpty()) {
+                    Text("بحث في الصفحة", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 inner()
             },
         )
         if (tab.findQuery.isNotEmpty()) {
-            Text(if (tab.findCount == 0) "0/0" else "${tab.findIndex + 1}/${tab.findCount}", style = MaterialTheme.typography.bodySmall)
+            Text(
+                if (tab.findCount == 0) "0/0" else "${tab.findIndex + 1}/${tab.findCount}",
+                style = MaterialTheme.typography.bodySmall
+            )
         }
-        IconButton(onClick = { vm.findNext(tab, false) }) { Icon(Icons.Filled.KeyboardArrowUp, "Previous match") }
-        IconButton(onClick = { vm.findNext(tab, true) }) { Icon(Icons.Filled.KeyboardArrowDown, "Next match") }
-        IconButton(onClick = { vm.closeFind(tab) }) { Icon(Icons.Filled.Close, "Close find") }
+        IconButton(onClick = { vm.findNext(tab, false) }) {
+            Icon(Icons.Filled.KeyboardArrowUp, "النتيجة السابقة")
+        }
+        IconButton(onClick = { vm.findNext(tab, true) }) {
+            Icon(Icons.Filled.KeyboardArrowDown, "النتيجة التالية")
+        }
+        IconButton(onClick = { vm.closeFind(tab) }) {
+            Icon(Icons.Filled.Close, "إغلاق البحث")
+        }
     }
 }
 
@@ -511,74 +590,122 @@ private fun FindBar(vm: BrowserViewModel, tab: BrowserTab) {
 @Composable
 private fun BottomToolbar(vm: BrowserViewModel, tab: BrowserTab, onOpenSettings: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         IconButton(onClick = vm::goBack, enabled = tab.canGoBack && !tab.showHome) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "رجوع")
         }
         IconButton(onClick = vm::goForward, enabled = tab.canGoForward && !tab.showHome) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Forward")
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, "تقدم")
         }
-        IconButton(onClick = vm::goHome) { Icon(Icons.Filled.Home, "Home") }
+        IconButton(onClick = vm::goHome) {
+            Icon(Icons.Filled.Home, "الرئيسية")
+        }
         IconButton(onClick = { vm.page = BrowserPage.TABS }) {
             Box(
-                Modifier.size(24.dp).border(BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface), RoundedCornerShape(6.dp)),
+                Modifier.size(24.dp).border(
+                    BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface),
+                    RoundedCornerShape(6.dp)
+                ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(vm.tabs.size.toString(), style = MaterialTheme.typography.labelSmall)
             }
         }
         Box {
-            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Filled.MoreVert, "Menu") }
+            IconButton(onClick = { menuOpen = true }) {
+                Icon(Icons.Filled.MoreVert, "القائمة")
+            }
             BrowserMenu(vm, tab, expanded = menuOpen, onDismiss = { menuOpen = false }, onOpenSettings = onOpenSettings)
         }
     }
 }
 
 @Composable
-private fun BrowserMenu(vm: BrowserViewModel, tab: BrowserTab, expanded: Boolean, onDismiss: () -> Unit, onOpenSettings: () -> Unit) {
+private fun BrowserMenu(
+    vm: BrowserViewModel,
+    tab: BrowserTab,
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
     val context = LocalContext.current
     val pageUrl = tab.url?.takeIf { UrlUtils.isHttpUrl(it) && !tab.showHome }
     val bookmarks by vm.bookmarks.collectAsStateWithLifecycle()
     val bookmarked = pageUrl != null && bookmarks.any { it.url == pageUrl }
 
     @Composable
-    fun item(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean = true, checked: Boolean = false, action: () -> Unit) {
+    fun item(
+        label: String,
+        icon: androidx.compose.ui.graphics.vector.ImageVector,
+        enabled: Boolean = true,
+        checked: Boolean = false,
+        action: () -> Unit
+    ) {
         DropdownMenuItem(
             text = { Text(label) },
             leadingIcon = { Icon(icon, null) },
             trailingIcon = if (checked) ({ Icon(Icons.Filled.Check, null) }) else null,
             enabled = enabled,
-            onClick = { onDismiss(); action() },
+            onClick = {
+                onDismiss()
+                action()
+            },
         )
     }
 
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        item("New tab", Icons.Filled.Add) { vm.newTab() }
-        item("New incognito tab", Icons.Filled.VisibilityOff) { vm.newTab(incognito = true) }
+        item("علامة تبويب جديدة", Icons.Filled.Add) { vm.newTab() }
+        item("علامة تبويب جديدة للتصفح الخفي", Icons.Filled.VisibilityOff) {
+            vm.newTab(incognito = true)
+        }
         HorizontalDivider()
-        item(if (bookmarked) "Remove bookmark" else "Add bookmark", if (bookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, enabled = pageUrl != null) {
+
+        item(
+            if (bookmarked) "إزالة الإشارة المرجعية" else "إضافة إشارة مرجعية",
+            if (bookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+            enabled = pageUrl != null
+        ) {
             vm.toggleBookmark(tab)
         }
-        item("Bookmarks", Icons.Filled.Bookmarks) { vm.page = BrowserPage.BOOKMARKS }
-        item("History", Icons.Filled.History) { vm.page = BrowserPage.HISTORY }
-        HorizontalDivider()
-        item("Share page", Icons.Filled.Share, enabled = pageUrl != null) {
-            val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                .putExtra(Intent.EXTRA_TEXT, pageUrl).putExtra(Intent.EXTRA_SUBJECT, tab.displayTitle)
-            context.startActivity(Intent.createChooser(send, "Share page"))
+        item("الإشارات المرجعية", Icons.Filled.Bookmarks) {
+            vm.page = BrowserPage.BOOKMARKS
         }
-        item("Copy link", Icons.Filled.ContentCopy, enabled = pageUrl != null) { copyToClipboard(context, pageUrl.orEmpty()) }
-        item("Open in external browser", Icons.AutoMirrored.Filled.OpenInNew, enabled = pageUrl != null) {
+        item("سجل التصفح", Icons.Filled.History) {
+            vm.page = BrowserPage.HISTORY
+        }
+        HorizontalDivider()
+
+        item("مشاركة الصفحة", Icons.Filled.Share, enabled = pageUrl != null) {
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, pageUrl)
+                .putExtra(Intent.EXTRA_SUBJECT, tab.displayTitle)
+            context.startActivity(Intent.createChooser(send, "مشاركة الصفحة"))
+        }
+        item("نسخ الرابط", Icons.Filled.ContentCopy, enabled = pageUrl != null) {
+            copyToClipboard(context, pageUrl.orEmpty())
+        }
+        item("فتح في متصفح خارجي", Icons.AutoMirrored.Filled.OpenInNew, enabled = pageUrl != null) {
             openExternally(context, pageUrl.orEmpty())
         }
-        item("Desktop site", Icons.Filled.DesktopWindows, checked = tab.desktop) { vm.toggleDesktop(tab) }
+        item("عرض إصدار سطح المكتب", Icons.Filled.DesktopWindows, checked = tab.desktop) {
+            vm.toggleDesktop(tab)
+        }
         val siteAllowed = pageUrl != null && vm.isSiteAllowed(tab)
-        item("Allow ads on this site", Icons.Filled.Shield, enabled = pageUrl != null, checked = siteAllowed) {
+        item("السماح بالإعلانات في هذا الموقع", Icons.Filled.Shield, enabled = pageUrl != null, checked = siteAllowed) {
             vm.setSiteAllowed(tab, !siteAllowed)
         }
-        item("Find in page", Icons.Filled.Search, enabled = pageUrl != null) { vm.startFind(tab) }
+        item("بحث في الصفحة", Icons.Filled.Search, enabled = pageUrl != null) {
+            vm.startFind(tab)
+        }
         HorizontalDivider()
-        item("Settings", Icons.Filled.Settings) { onOpenSettings() }
+        item("الإعدادات", Icons.Filled.Settings) {
+            onOpenSettings()
+        }
     }
 }
 
@@ -597,36 +724,63 @@ private fun LinkMenu(vm: BrowserViewModel, target: LinkTarget) {
         Text(
             label,
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth().clickable { dismiss(); run() }.padding(vertical = 14.dp),
+            modifier = Modifier.fillMaxWidth().clickable {
+                dismiss()
+                run()
+            }.padding(vertical = 14.dp),
         )
     }
 
     AlertDialog(
         onDismissRequest = dismiss,
-        confirmButton = { TextButton(onClick = dismiss) { Text("Cancel") } },
+        confirmButton = {
+            TextButton(onClick = dismiss) { Text("إلغاء") }
+        },
         title = {
             Text(
-                link ?: image ?: video?.takeIf { it != "blob" } ?: "Video",
-                maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall,
+                link ?: image ?: video?.takeIf { it != "blob" } ?: "فيديو",
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleSmall,
             )
         },
         text = {
             Column {
                 if (video != null) {
-                    action("Download video with XDM") { vm.downloadVideoFromMenu(target.tabId, video) }
-                    if (video != "blob") action("Copy video URL") { copyToClipboard(context, video) }
+                    action("تنزيل الفيديو باستخدام بحمد") {
+                        vm.downloadVideoFromMenu(target.tabId, video)
+                    }
+                    if (video != "blob") {
+                        action("نسخ رابط الفيديو") {
+                            copyToClipboard(context, video)
+                        }
+                    }
                 }
                 if (link != null) {
-                    action("Download with XDM") { vm.downloadLink(target.tabId, link) }
-                    action("Open in new tab") { vm.newTab(link) }
-                    action("Copy link") { copyToClipboard(context, link) }
-                    action("Share link") { shareText(context, link) }
+                    action("تنزيل باستخدام بحمد") {
+                        vm.downloadLink(target.tabId, link)
+                    }
+                    action("فتح في علامة تبويب جديدة") {
+                        vm.newTab(link)
+                    }
+                    action("نسخ الرابط") {
+                        copyToClipboard(context, link)
+                    }
+                    action("مشاركة الرابط") {
+                        shareText(context, link)
+                    }
                 }
                 if (image != null) {
-                    action("Download image with XDM") { vm.downloadLink(target.tabId, image) }
+                    action("تنزيل الصورة باستخدام بحمد") {
+                        vm.downloadLink(target.tabId, image)
+                    }
                     if (link == null) {
-                        action("Open image in new tab") { vm.newTab(image) }
-                        action("Copy image URL") { copyToClipboard(context, image) }
+                        action("فتح الصورة في علامة تبويب جديدة") {
+                            vm.newTab(image)
+                        }
+                        action("نسخ رابط الصورة") {
+                            copyToClipboard(context, image)
+                        }
                     }
                 }
             }
@@ -635,19 +789,25 @@ private fun LinkMenu(vm: BrowserViewModel, target: LinkTarget) {
 }
 
 internal fun copyToClipboard(context: Context, text: String) {
-    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("URL", text))
-    Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+    context.getSystemService(ClipboardManager::class.java)
+        .setPrimaryClip(ClipData.newPlainText("رابط", text))
+    Toast.makeText(context, "تم النسخ", Toast.LENGTH_SHORT).show()
 }
 
 internal fun shareText(context: Context, text: String) {
-    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-    context.startActivity(Intent.createChooser(send, "Share link"))
+    val send = Intent(Intent.ACTION_SEND)
+        .setType("text/plain")
+        .putExtra(Intent.EXTRA_TEXT, text)
+    context.startActivity(Intent.createChooser(send, "مشاركة الرابط"))
 }
 
 internal fun openExternally(context: Context, url: String) {
     try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                .addCategory(Intent.CATEGORY_BROWSABLE)
+        )
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "No app can open this link", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "لا يوجد تطبيق يستطيع فتح هذا الرابط", Toast.LENGTH_SHORT).show()
     }
 }

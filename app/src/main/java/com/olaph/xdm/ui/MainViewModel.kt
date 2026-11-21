@@ -90,7 +90,10 @@ data class ReplacementOffer(
 )
 
 enum class Filter(val label: String) {
-    ALL("All"), ACTIVE("Active"), COMPLETED("Completed"), FAILED("Failed");
+    ALL("الكل"),
+    ACTIVE("النشطة"),
+    COMPLETED("المكتملة"),
+    FAILED("الفاشلة");
 
     fun matches(s: DownloadStatus) = when (this) {
         ALL -> true

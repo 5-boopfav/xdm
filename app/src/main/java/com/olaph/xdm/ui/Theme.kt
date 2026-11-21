@@ -12,12 +12,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.olaph.xdm.data.ThemeMode
 
+// ألوان الوضع النهاري
 private val LightColors = lightColorScheme(
     primary = Color(0xFF1565C0),
     secondary = Color(0xFF546E7A),
     tertiary = Color(0xFF00897B),
 )
 
+// ألوان الوضع الليلي
 private val DarkColors = darkColorScheme(
     primary = Color(0xFF90CAF9),
     secondary = Color(0xFFB0BEC5),
@@ -31,12 +33,19 @@ fun XdmTheme(mode: ThemeMode, content: @Composable () -> Unit) {
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
+
     val context = LocalContext.current
+
     val colors = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+
         dark -> DarkColors
         else -> LightColors
     }
-    MaterialTheme(colorScheme = colors, content = content)
+
+    MaterialTheme(
+        colorScheme = colors,
+        content = content
+    )
 }

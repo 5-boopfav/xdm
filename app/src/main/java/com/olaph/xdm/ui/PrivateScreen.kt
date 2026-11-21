@@ -101,7 +101,7 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-/** No screenshots, screen recording or recents thumbnail while anything of the private folder is on screen. */
+/** منع لقطات الشاشة وتسجيل الشاشة وظهور صورة مصغرة للمجلد الخاص في التطبيقات الأخيرة. */
 @Composable
 private fun SecureWindow() {
     val activity = LocalContext.current.findActivity()
@@ -117,7 +117,7 @@ private object Biometrics {
     fun available(context: Context): Boolean =
         BiometricManager.from(context).canAuthenticate(AUTHENTICATORS) == BiometricManager.BIOMETRIC_SUCCESS
 
-    /** The PIN always works as well; cancelling just falls back to it. */
+    /** يظل الرقم السري متاحاً دائماً؛ وإلغاء التحقق بالبصمة يعيد المستخدم إلى إدخال الرقم السري. */
     fun prompt(activity: FragmentActivity, title: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         val prompt = BiometricPrompt(
             activity,
@@ -134,10 +134,10 @@ private object Biometrics {
         )
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
-            .setNegativeButtonText("Use PIN")
+            .setNegativeButtonText("استخدام الرقم السري")
             .setAllowedAuthenticators(AUTHENTICATORS)
             .build()
-        runCatching { prompt.authenticate(info) }.onFailure { onError(it.message ?: "Biometric unlock is not available") }
+        runCatching { prompt.authenticate(info) }.onFailure { onError(it.message ?: "الفتح بالبصمة غير متاح") }
     }
 }
 
@@ -177,7 +177,7 @@ private fun PinField(value: String, onChange: (String) -> Unit, label: String, i
 private fun SimpleTopBar(title: String, onBack: () -> Unit) {
     TopAppBar(
         title = { Text(title) },
-        navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+        navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "رجوع") } },
     )
 }
 
@@ -188,36 +188,37 @@ private fun SetupPin(vm: PrivateViewModel, snackbar: SnackbarHostState, onBack: 
     var confirm by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val valid = PinHasher.isValidPin(pin) && pin == confirm
-    Scaffold(topBar = { SimpleTopBar("Private folder", onBack) }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+    Scaffold(topBar = { SimpleTopBar("المجلد الخاص", onBack) }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Set a PIN", style = MaterialTheme.typography.titleLarge)
+            Text("إنشاء رقم سري", style = MaterialTheme.typography.titleLarge)
             Text(
-                "Files in the private folder are kept inside XDM's own storage: they don't show up in the gallery, " +
-                    "in file managers or in other apps, and they're not included in backups. Opening the folder needs this PIN.",
+                "تُحفظ الملفات الموجودة في المجلد الخاص داخل مساحة التخزين الخاصة بتطبيق بحمد IDM. " +
+                    "لن تظهر في معرض الصور أو مدير الملفات أو التطبيقات الأخرى، كما لن تُضمّن في النسخ الاحتياطية. " +
+                    "يتطلب فتح هذا المجلد إدخال الرقم السري.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                "There is no PIN recovery. If you forget it, the only way back in is \"Reset private folder\", which deletes " +
-                    "everything in it.",
+                "لا توجد طريقة لاستعادة الرقم السري. إذا نسيته، فالطريقة الوحيدة للدخول مجدداً هي «إعادة ضبط المجلد الخاص»، " +
+                    "وهذا سيؤدي إلى حذف جميع الملفات الموجودة بداخله.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
             )
-            PinField(pin, { pin = it }, "PIN (4 to 8 digits)")
-            PinField(confirm, { confirm = it }, "Repeat the PIN", isError = confirm.isNotEmpty() && confirm != pin)
+            PinField(pin, { pin = it }, "الرقم السري (من 4 إلى 8 أرقام)")
+            PinField(confirm, { confirm = it }, "أعد إدخال الرقم السري", isError = confirm.isNotEmpty() && confirm != pin)
             Button(
                 onClick = {
                     busy = true
                     scope.launch {
-                        if (!vm.setupPin(pin)) snackbar.showSnackbar("Could not set the PIN")
+                        if (!vm.setupPin(pin)) snackbar.showSnackbar("تعذّر إنشاء الرقم السري")
                         busy = false
                     }
                 },
                 enabled = valid && !busy,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Set PIN") }
+            ) { Text("إنشاء الرقم السري") }
         }
     }
 }
@@ -244,9 +245,9 @@ private fun LockScreen(vm: PrivateViewModel, snackbar: SnackbarHostState, onBack
     val activity = context.findActivity() as? FragmentActivity
     val canUseBiometric = biometricEnabled && activity != null && Biometrics.available(context)
     fun biometric() {
-        if (activity != null) Biometrics.prompt(activity, "Unlock private folder", vm::unlockWithBiometric) { hint = it }
+        if (activity != null) Biometrics.prompt(activity, "فتح المجلد الخاص", vm::unlockWithBiometric) { hint = it }
     }
-    // Offer the fingerprint/face prompt straight away once per visit.
+    // عرض نافذة البصمة أو الوجه تلقائياً مرة واحدة عند الدخول إلى الشاشة.
     LaunchedEffect(canUseBiometric) { if (canUseBiometric) biometric() }
 
     fun submit() {
@@ -257,9 +258,9 @@ private fun LockScreen(vm: PrivateViewModel, snackbar: SnackbarHostState, onBack
                 UnlockResult.Ok, UnlockResult.NoPin -> null
                 is UnlockResult.CoolingDown -> null
                 is UnlockResult.Wrong -> when {
-                    r.cooldownMs > 0 -> "Wrong PIN"
-                    r.attemptsLeft in 1..2 -> "Wrong PIN · ${r.attemptsLeft} more before a pause"
-                    else -> "Wrong PIN"
+                    r.cooldownMs > 0 -> "الرقم السري غير صحيح"
+                    r.attemptsLeft in 1..2 -> "الرقم السري غير صحيح · تبقى ${r.attemptsLeft} محاولة قبل الإيقاف المؤقت"
+                    else -> "الرقم السري غير صحيح"
                 }
             }
             pin = ""
@@ -267,63 +268,63 @@ private fun LockScreen(vm: PrivateViewModel, snackbar: SnackbarHostState, onBack
         }
     }
 
-    Scaffold(topBar = { SimpleTopBar("Private folder", onBack) }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+    Scaffold(topBar = { SimpleTopBar("المجلد الخاص", onBack) }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(Icons.Filled.Lock, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
-            Text("Enter your PIN", style = MaterialTheme.typography.titleLarge)
-            PinField(pin, { pin = it; hint = null }, "PIN", isError = hint != null)
+            Text("أدخل الرقم السري", style = MaterialTheme.typography.titleLarge)
+            PinField(pin, { pin = it; hint = null }, "الرقم السري", isError = hint != null)
             when {
                 remaining > 0 -> Text(
-                    "Too many wrong PINs. Try again in ${(remaining + 999) / 1000} s.",
+                    "تم إدخال الرقم السري بشكل خاطئ مرات عديدة. حاول مجدداً بعد ${(remaining + 999) / 1000} ثانية.",
                     color = MaterialTheme.colorScheme.error,
                 )
                 hint != null -> Text(hint.orEmpty(), color = MaterialTheme.colorScheme.error)
             }
             Button(onClick = ::submit, enabled = !busy && remaining <= 0 && pin.length >= 4, modifier = Modifier.fillMaxWidth()) {
-                Text(if (busy) "Checking…" else "Unlock")
+                Text(if (busy) "جارٍ التحقق..." else "فتح المجلد")
             }
             if (canUseBiometric) {
                 OutlinedButton(onClick = ::biometric, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Filled.Fingerprint, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Use fingerprint or face")
+                    Text("استخدام البصمة أو الوجه")
                 }
             }
-            TextButton(onClick = { resetting = true }) { Text("Forgot PIN?") }
+            TextButton(onClick = { resetting = true }) { Text("نسيت الرقم السري؟") }
         }
     }
     if (resetting) ResetDialog(onDismiss = { resetting = false }) { resetting = false; vm.reset() }
 }
 
-/** The only way past a forgotten PIN: delete everything. Needs the word typed out. */
+/** الطريقة الوحيدة لتجاوز الرقم السري المنسي هي حذف جميع الملفات. يجب كتابة كلمة التأكيد. */
 @Composable
 private fun ResetDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
     var typed by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Reset private folder?") },
+        title = { Text("إعادة ضبط المجلد الخاص؟") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("This deletes every file in the private folder, any private download still in progress, and the PIN.")
-                Text("There is no way to get the files back.", color = MaterialTheme.colorScheme.error)
-                Text("Type $RESET_WORD to confirm.")
+                Text("سيؤدي هذا الإجراء إلى حذف جميع الملفات في المجلد الخاص، وأي تنزيل خاص لا يزال قيد التنفيذ، والرقم السري.")
+                Text("لا توجد طريقة لاستعادة الملفات بعد حذفها.", color = MaterialTheme.colorScheme.error)
+                Text("اكتب كلمة $RESET_WORD للتأكيد.")
                 OutlinedTextField(value = typed, onValueChange = { typed = it.take(20) }, singleLine = true)
             }
         },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = typed.trim() == RESET_WORD) {
-                Text("Delete everything", color = MaterialTheme.colorScheme.error)
+                Text("حذف جميع الملفات", color = MaterialTheme.colorScheme.error)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } },
     )
 }
 
-private const val RESET_WORD = "RESET"
+private const val RESET_WORD = "إعادة"
 
 private sealed interface PendingAction {
     data class Share(val d: DownloadEntity) : PendingAction
@@ -358,32 +359,32 @@ private fun VaultContent(vm: PrivateViewModel, snackbar: SnackbarHostState, onBa
         topBar = {
             if (selecting) {
                 TopAppBar(
-                    title = { Text("${selected.size} selected") },
-                    navigationIcon = { IconButton(onClick = vm::clearSelection) { Icon(Icons.Filled.Close, "Clear selection") } },
+                    title = { Text("${selected.size} عنصر محدد") },
+                    navigationIcon = { IconButton(onClick = vm::clearSelection) { Icon(Icons.Filled.Close, "إلغاء التحديد") } },
                     actions = {
-                        IconButton(onClick = { vm.selectAll(items.map { it.entity.id }) }) { Icon(Icons.Filled.SelectAll, "Select all") }
+                        IconButton(onClick = { vm.selectAll(items.map { it.entity.id }) }) { Icon(Icons.Filled.SelectAll, "تحديد الكل") }
                         IconButton(onClick = { pending = PendingAction.Delete(items.map { it.entity }.filter { it.id in selected }) }) {
-                            Icon(Icons.Filled.Delete, "Delete")
+                            Icon(Icons.Filled.Delete, "حذف")
                         }
                     },
                 )
             } else {
                 TopAppBar(
-                    title = { Text("Private folder") },
-                    navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    title = { Text("المجلد الخاص") },
+                    navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "رجوع") } },
                     actions = {
-                        IconButton(onClick = { vm.lockNow(); onBack() }) { Icon(Icons.Filled.Lock, "Lock now") }
+                        IconButton(onClick = { vm.lockNow(); onBack() }) { Icon(Icons.Filled.Lock, "قفل الآن") }
                         Box {
-                            IconButton(onClick = { overflow = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                            IconButton(onClick = { overflow = true }) { Icon(Icons.Filled.MoreVert, "المزيد") }
                             DropdownMenu(expanded = overflow, onDismissRequest = { overflow = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Change PIN") },
+                                    text = { Text("تغيير الرقم السري") },
                                     leadingIcon = { Icon(Icons.Filled.Password, null) },
                                     onClick = { overflow = false; pending = PendingAction.ChangePin },
                                 )
                                 if (activity != null && Biometrics.available(context)) {
                                     DropdownMenuItem(
-                                        text = { Text("Unlock with fingerprint or face") },
+                                        text = { Text("الفتح بالبصمة أو الوجه") },
                                         leadingIcon = { Icon(Icons.Filled.Fingerprint, null) },
                                         trailingIcon = { Switch(checked = biometricEnabled, onCheckedChange = null) },
                                         onClick = {
@@ -391,14 +392,14 @@ private fun VaultContent(vm: PrivateViewModel, snackbar: SnackbarHostState, onBa
                                             if (biometricEnabled) {
                                                 vm.setBiometricEnabled(false)
                                             } else {
-                                                // Only switched on after it worked once.
-                                                Biometrics.prompt(activity, "Use fingerprint or face", { vm.setBiometricEnabled(true) }) {}
+                                                // لا يتم تفعيل الخيار إلا بعد نجاح التحقق بالبصمة أو الوجه مرة واحدة.
+                                                Biometrics.prompt(activity, "استخدام البصمة أو الوجه", { vm.setBiometricEnabled(true) }) {}
                                             }
                                         },
                                     )
                                 }
                                 DropdownMenuItem(
-                                    text = { Text("Delete all (${items.size})") },
+                                    text = { Text("حذف الكل (${items.size})") },
                                     leadingIcon = { Icon(Icons.Filled.DeleteSweep, null) },
                                     enabled = items.isNotEmpty(),
                                     onClick = { overflow = false; pending = PendingAction.Delete(items.map { it.entity }) },
@@ -414,8 +415,7 @@ private fun VaultContent(vm: PrivateViewModel, snackbar: SnackbarHostState, onBa
         if (items.isEmpty()) {
             Box(Modifier.padding(padding).fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    "Nothing here yet.\nTick \"Save to private folder\" when adding a download, or use \"Move to private folder\" " +
-                        "on a finished one.",
+                    "لا توجد ملفات هنا حتى الآن.\nفعّل خيار «الحفظ في المجلد الخاص» عند إضافة تنزيل، أو استخدم «نقل إلى المجلد الخاص» مع ملف مكتمل.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -427,7 +427,7 @@ private fun VaultContent(vm: PrivateViewModel, snackbar: SnackbarHostState, onBa
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (active.isNotEmpty()) {
-                item { SectionLabel("In progress") }
+                item { SectionLabel("التنزيلات قيد التنفيذ") }
                 items(active, key = { it.entity.id }) { item ->
                     ActiveRow(item, vm, selecting, item.entity.id in selected, onDelete = { pending = PendingAction.Delete(listOf(item.entity)) })
                 }
@@ -451,40 +451,40 @@ private fun VaultContent(vm: PrivateViewModel, snackbar: SnackbarHostState, onBa
     when (val p = pending) {
         null -> Unit
         is PendingAction.Share -> LeaveWarning(
-            title = "Share outside the private folder?",
-            text = "The app you share with gets its own copy. It can keep it, and that copy is no longer protected by XDM.",
-            confirm = "Share",
+            title = "مشاركة الملف خارج المجلد الخاص؟",
+            text = "سيحصل التطبيق الذي تشارك الملف معه على نسخة خاصة به. ويمكنه الاحتفاظ بها، ولن تكون هذه النسخة محمية بواسطة بحمد IDM.",
+            confirm = "مشاركة",
             onDismiss = { pending = null },
         ) { pending = null; FileActions.share(context, vm.container, p.d) }
         is PendingAction.OpenElsewhere -> LeaveWarning(
-            title = "Open in another app?",
-            text = "The other app can read this file and may keep a copy or a thumbnail.",
-            confirm = "Open",
+            title = "فتح الملف في تطبيق آخر؟",
+            text = "يمكن للتطبيق الآخر قراءة هذا الملف، وقد يحتفظ بنسخة منه أو بصورة مصغرة له.",
+            confirm = "فتح",
             onDismiss = { pending = null },
         ) { pending = null; FileActions.openWith(context, vm.container, p.d) }
         is PendingAction.MoveOut -> LeaveWarning(
-            title = "Move out of the private folder?",
-            text = "The file goes back to Download/XDM, where the gallery and other apps can see it.",
-            confirm = "Move out",
+            title = "نقل الملف خارج المجلد الخاص؟",
+            text = "سيعود الملف إلى Download/XDM، حيث يمكن لمعرض الصور والتطبيقات الأخرى الوصول إليه.",
+            confirm = "نقل",
             onDismiss = { pending = null },
         ) { pending = null; vm.moveOut(p.d) }
         is PendingAction.Rename -> RenameDialog(p.d.fileName, onDismiss = { pending = null }) { name -> pending = null; vm.rename(p.d, name) }
         is PendingAction.Delete -> AlertDialog(
             onDismissRequest = { pending = null },
-            title = { Text(if (p.items.size == 1) "Delete this file?" else "Delete ${p.items.size} items?") },
+            title = { Text(if (p.items.size == 1) "حذف هذا الملف؟" else "حذف ${p.items.size} عناصر؟") },
             text = {
                 Text(
-                    "Deleted from the private folder for good" +
+                    "سيتم حذف الملفات نهائياً من المجلد الخاص" +
                         p.items.sumOf { it.totalBytes.coerceAtLeast(0) }.takeIf { it > 0 }?.let { " (${Formatters.bytes(it)})" }.orEmpty() +
-                        ". Downloads in progress are cancelled.",
+                        ". وسيتم إلغاء التنزيلات قيد التنفيذ.",
                 )
             },
             confirmButton = {
                 TextButton(onClick = { pending = null; vm.delete(p.items.map { it.id }) }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("حذف", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { pending = null }) { Text("Keep") } },
+            dismissButton = { TextButton(onClick = { pending = null }) { Text("احتفاظ بالملفات") } },
         )
         PendingAction.ChangePin -> ChangePinDialog(vm, onDone = { message ->
             pending = null
@@ -533,22 +533,22 @@ private fun ActiveRow(item: DownloadItem, vm: PrivateViewModel, selecting: Boole
             }
             if (!selecting) {
                 when (d.status) {
-                    DownloadStatus.RUNNING, DownloadStatus.QUEUED -> IconButton(onClick = { vm.pause(d.id) }) { Icon(Icons.Filled.Pause, "Pause") }
-                    DownloadStatus.PAUSED -> IconButton(onClick = { vm.resume(d.id) }) { Icon(Icons.Filled.PlayArrow, "Resume") }
-                    else -> IconButton(onClick = { vm.resume(d.id) }) { Icon(Icons.Filled.Refresh, "Retry") }
+                    DownloadStatus.RUNNING, DownloadStatus.QUEUED -> IconButton(onClick = { vm.pause(d.id) }) { Icon(Icons.Filled.Pause, "إيقاف مؤقت") }
+                    DownloadStatus.PAUSED -> IconButton(onClick = { vm.resume(d.id) }) { Icon(Icons.Filled.PlayArrow, "استئناف") }
+                    else -> IconButton(onClick = { vm.resume(d.id) }) { Icon(Icons.Filled.Refresh, "إعادة المحاولة") }
                 }
                 Box {
-                    IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                    IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "المزيد") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         if (d.status != DownloadStatus.FAILED && d.status != DownloadStatus.CANCELLED) {
                             DropdownMenuItem(
-                                text = { Text("Cancel") },
+                                text = { Text("إلغاء التنزيل") },
                                 leadingIcon = { Icon(Icons.Filled.Close, null) },
                                 onClick = { menu = false; vm.cancel(d.id) },
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text("حذف") },
                             leadingIcon = { Icon(Icons.Filled.Delete, null) },
                             onClick = { menu = false; onDelete() },
                         )
@@ -593,30 +593,30 @@ private fun FileRow(
             }
             if (!selecting) {
                 Box {
-                    IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                    IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "المزيد") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
-                            text = { Text("Open with…") },
+                            text = { Text("فتح باستخدام...") },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
                             onClick = { menu = false; onOpen() },
                         )
                         DropdownMenuItem(
-                            text = { Text("Move out") },
+                            text = { Text("نقل خارج المجلد الخاص") },
                             leadingIcon = { Icon(Icons.Filled.LockOpen, null) },
                             onClick = { menu = false; onAction(PendingAction.MoveOut(d)) },
                         )
                         DropdownMenuItem(
-                            text = { Text("Rename") },
+                            text = { Text("إعادة تسمية") },
                             leadingIcon = { Icon(Icons.Filled.Edit, null) },
                             onClick = { menu = false; onAction(PendingAction.Rename(d)) },
                         )
                         DropdownMenuItem(
-                            text = { Text("Share") },
+                            text = { Text("مشاركة") },
                             leadingIcon = { Icon(Icons.Filled.Share, null) },
                             onClick = { menu = false; onAction(PendingAction.Share(d)) },
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text("حذف") },
                             leadingIcon = { Icon(Icons.Filled.Delete, null) },
                             onClick = { menu = false; onAction(PendingAction.Delete(listOf(d))) },
                         )
@@ -634,7 +634,7 @@ private fun LeaveWarning(title: String, text: String, confirm: String, onDismiss
         title = { Text(title) },
         text = { Text(text) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirm) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } },
     )
 }
 
@@ -643,10 +643,10 @@ private fun RenameDialog(current: String, onDismiss: () -> Unit, onConfirm: (Str
     var name by remember { mutableStateOf(current) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename") },
+        title = { Text("إعادة تسمية الملف") },
         text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true, modifier = Modifier.fillMaxWidth()) },
-        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank() && name.trim() != current) { Text("Rename") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank() && name.trim() != current) { Text("إعادة تسمية") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } },
     )
 }
 
@@ -660,12 +660,12 @@ private fun ChangePinDialog(vm: PrivateViewModel, onDone: (String?) -> Unit) {
     var busy by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = { onDone(null) },
-        title = { Text("Change PIN") },
+        title = { Text("تغيير الرقم السري") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                PinField(old, { old = it; error = null }, "Current PIN", isError = error != null)
-                PinField(new, { new = it }, "New PIN (4 to 8 digits)")
-                PinField(repeat, { repeat = it }, "Repeat the new PIN", isError = repeat.isNotEmpty() && repeat != new)
+                PinField(old, { old = it; error = null }, "الرقم السري الحالي", isError = error != null)
+                PinField(new, { new = it }, "الرقم السري الجديد (من 4 إلى 8 أرقام)")
+                PinField(repeat, { repeat = it }, "أعد إدخال الرقم السري الجديد", isError = repeat.isNotEmpty() && repeat != new)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },
@@ -676,16 +676,16 @@ private fun ChangePinDialog(vm: PrivateViewModel, onDone: (String?) -> Unit) {
                     busy = true
                     scope.launch {
                         when (val r = vm.changePin(old, new)) {
-                            UnlockResult.Ok -> onDone("PIN changed")
-                            is UnlockResult.CoolingDown -> error = "Too many wrong PINs. Try again in ${(r.remainingMs + 999) / 1000} s."
-                            is UnlockResult.Wrong -> error = "The current PIN is wrong"
+                            UnlockResult.Ok -> onDone("تم تغيير الرقم السري")
+                            is UnlockResult.CoolingDown -> error = "محاولات خاطئة كثيرة. حاول مجدداً بعد ${(r.remainingMs + 999) / 1000} ثانية."
+                            is UnlockResult.Wrong -> error = "الرقم السري الحالي غير صحيح"
                             UnlockResult.NoPin -> onDone(null)
                         }
                         busy = false
                     }
                 },
-            ) { Text("Change") }
+            ) { Text("تغيير") }
         },
-        dismissButton = { TextButton(onClick = { onDone(null) }) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = { onDone(null) }) { Text("إلغاء") } },
     )
 }

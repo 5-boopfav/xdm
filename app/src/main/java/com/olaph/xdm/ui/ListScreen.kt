@@ -110,12 +110,14 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
     val queue by vm.queueStatus.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val clipboardOffer by vm.clipboardOffer.collectAsStateWithLifecycle()
-    // The exemption is granted in a system screen: look again every time we are back.
+
+    // يتم منح الاستثناء من شاشة النظام، لذلك نتحقق منه مجددًا عند العودة.
     var batteryExempt by remember { mutableStateOf(BackgroundHelp.isExempt(context)) }
     LifecycleResumeEffect(Unit) {
         batteryExempt = BackgroundHelp.isExempt(context)
         onPauseOrDispose {}
     }
+
     var filter by rememberSaveable { mutableStateOf(Filter.ALL) }
     var pendingDelete by remember { mutableStateOf<DownloadEntity?>(null) }
     var bulkDelete by remember { mutableStateOf<List<DownloadEntity>?>(null) }
@@ -129,10 +131,11 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
 
     BackHandler(enabled = selecting) { vm.clearSelection() }
 
-    // Files the app may not delete itself (e.g. left over from a previous install): one system dialog for all.
+    // الملفات التي لا يستطيع التطبيق حذفها بنفسه: تعرض في نافذة نظام واحدة.
     val systemDelete = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
         vm.onSystemDeleteResult(it.resultCode == Activity.RESULT_OK)
     }
+
     LaunchedEffect(vm) {
         vm.events.collect { e ->
             when (e) {
@@ -145,8 +148,8 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
     LaunchedEffect(clipboardOffer) {
         val offer = clipboardOffer ?: return@LaunchedEffect
         val result = snackbar.showSnackbar(
-            message = "Link in clipboard: ${offer.take(60)}",
-            actionLabel = "Download",
+            message = "رابط في الحافظة: ${offer.take(60)}",
+            actionLabel = "تنزيل",
             withDismissAction = true,
             duration = SnackbarDuration.Long,
         )
@@ -158,30 +161,58 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
             if (selecting) {
                 val chosen = items.orEmpty().map { it.entity }.filter { it.id in selected }
                 TopAppBar(
-                    title = { Text("${selected.size} selected") },
-                    navigationIcon = { IconButton(onClick = { vm.clearSelection() }) { Icon(Icons.Filled.Close, "Clear selection") } },
-                    actions = {
-                        IconButton(onClick = { vm.selectAll(scoped.map { it.id }) }) { Icon(Icons.Filled.SelectAll, "Select all") }
-                        val completed = chosen.filter { it.status == DownloadStatus.COMPLETED }
-                        if (completed.isNotEmpty()) {
-                            IconButton(onClick = { FileActions.shareMany(context, vm.container, completed) }) { Icon(Icons.Filled.Share, "Share") }
+                    title = { Text("تم تحديد ${selected.size}") },
+                    navigationIcon = {
+                        IconButton(onClick = { vm.clearSelection() }) {
+                            Icon(Icons.Filled.Close, "إلغاء التحديد")
                         }
-                        IconButton(onClick = { bulkDelete = chosen }) { Icon(Icons.Filled.Delete, "Delete") }
+                    },
+                    actions = {
+                        IconButton(onClick = { vm.selectAll(scoped.map { it.id }) }) {
+                            Icon(Icons.Filled.SelectAll, "تحديد الكل")
+                        }
+
+                        val completed = chosen.filter { it.status == DownloadStatus.COMPLETED }
+
+                        if (completed.isNotEmpty()) {
+                            IconButton(onClick = { FileActions.shareMany(context, vm.container, completed) }) {
+                                Icon(Icons.Filled.Share, "مشاركة")
+                            }
+                        }
+
+                        IconButton(onClick = { bulkDelete = chosen }) {
+                            Icon(Icons.Filled.Delete, "حذف")
+                        }
                     },
                 )
             } else {
                 TopAppBar(
-                    title = { Text("XDM") },
+                    title = { Text("بحمد") },
                     actions = {
-                        IconButton(onClick = onOpenPrivate) { Icon(Icons.Filled.Lock, "Private folder") }
-                        IconButton(onClick = { vm.pauseAll() }) { Icon(Icons.Filled.PauseCircle, "Pause all") }
-                        IconButton(onClick = { vm.resumeAll() }) { Icon(Icons.Filled.PlayCircle, "Resume all") }
-                        IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, "Settings") }
+                        IconButton(onClick = onOpenPrivate) {
+                            Icon(Icons.Filled.Lock, "المجلد الخاص")
+                        }
+
+                        IconButton(onClick = { vm.pauseAll() }) {
+                            Icon(Icons.Filled.PauseCircle, "إيقاف الكل مؤقتًا")
+                        }
+
+                        IconButton(onClick = { vm.resumeAll() }) {
+                            Icon(Icons.Filled.PlayCircle, "استئناف الكل")
+                        }
+
+                        IconButton(onClick = onOpenSettings) {
+                            Icon(Icons.Filled.Settings, "الإعدادات")
+                        }
+
                         Box {
-                            IconButton(onClick = { overflow = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                            IconButton(onClick = { overflow = true }) {
+                                Icon(Icons.Filled.MoreVert, "المزيد")
+                            }
+
                             DropdownMenu(expanded = overflow, onDismissRequest = { overflow = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Delete all (${filter.label}: ${scoped.size})") },
+                                    text = { Text("حذف الكل (${filter.label}: ${scoped.size})") },
                                     leadingIcon = { Icon(Icons.Filled.DeleteSweep, null) },
                                     enabled = scoped.isNotEmpty() && deleteProgress == null,
                                     onClick = { overflow = false; bulkDelete = scoped },
@@ -192,31 +223,48 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
                 )
             }
         },
+
         floatingActionButton = {
-            if (!selecting) FloatingActionButton(onClick = { vm.openAddSheet() }) { Icon(Icons.Filled.Add, "Add download") }
+            if (!selecting) {
+                FloatingActionButton(onClick = { vm.openAddSheet() }) {
+                    Icon(Icons.Filled.Add, "إضافة تنزيل")
+                }
+            }
         },
+
         snackbarHost = { SnackbarHost(snackbar) },
+
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
+
             TabRow(selectedTabIndex = filter.ordinal) {
                 Filter.entries.forEach { f ->
                     val count = items?.count { f.matches(it.entity.status) }
+
                     Tab(
                         selected = f == filter,
                         onClick = { filter = f },
-                        text = { Text(if (count != null && count > 0) "${f.label} ($count)" else f.label) },
+                        text = {
+                            Text(if (count != null && count > 0) "${f.label} ($count)" else f.label)
+                        },
                     )
                 }
             }
+
             deleteProgress?.let { p ->
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
-                    Text("Deleting ${p.done} / ${p.total}…", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        "جارٍ الحذف ${p.done} / ${p.total}…",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
                     LinearProgressIndicator(
                         progress = { if (p.total > 0) p.done.toFloat() / p.total else 0f },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
+
             limitsLine(settings, queue)?.let { line ->
                 Text(
                     line,
@@ -225,21 +273,30 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
+
             if (settings.saveFolderWarning) {
                 InfoCard(
-                    "The folder you chose for downloads isn't available, so new files go to Download/XDM. Pick another folder in Settings.",
-                    actionLabel = "Settings", onAction = onOpenSettings, onDismiss = vm::dismissFolderWarning,
+                    "مجلد التنزيلات الذي اخترته غير متاح، لذلك ستُحفظ الملفات الجديدة في Download/XDM. اختر مجلدًا آخر من الإعدادات.",
+                    actionLabel = "الإعدادات",
+                    onAction = onOpenSettings,
+                    onDismiss = vm::dismissFolderWarning,
                 )
             }
+
             if (BatteryAdvice.shouldShowCard(batteryExempt, settings.batteryCardDismissed, items.orEmpty().map { it.entity })) {
                 InfoCard(
-                    "Battery saving can stop long downloads in the background; allowing XDM to ignore it keeps them going.",
-                    actionLabel = "Allow", onAction = { BackgroundHelp.openBatterySettings(context) }, onDismiss = vm::dismissBatteryCard,
+                    "قد يؤدي توفير البطارية إلى إيقاف التنزيلات الطويلة في الخلفية؛ اسمح للتطبيق بتجاهل قيود توفير البطارية لمواصلة التنزيل.",
+                    actionLabel = "السماح",
+                    onAction = { BackgroundHelp.openBatterySettings(context) },
+                    onDismiss = vm::dismissBatteryCard,
                 )
             }
+
             when {
                 shown == null -> Unit
+
                 shown.isEmpty() -> EmptyState(filter)
+
                 else -> LazyColumn(
                     contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -251,16 +308,21 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
                             vm = vm,
                             selecting = selecting,
                             checked = item.entity.id in selected,
+
                             onClick = {
                                 val d = item.entity
                                 when {
                                     selecting -> vm.toggleSelected(d.id)
-                                    // A finished file opens in another app; everything else shows its details.
+                                    // يفتح الملف المكتمل في تطبيق آخر، أما غير المكتمل فتُعرض تفاصيله.
                                     d.status == DownloadStatus.COMPLETED -> vm.open(context, d)
                                     else -> onOpenDetail(d.id)
                                 }
                             },
-                            onLongClick = { if (!selecting) vm.toggleSelected(item.entity.id) },
+
+                            onLongClick = {
+                                if (!selecting) vm.toggleSelected(item.entity.id)
+                            },
+
                             onDelete = { pendingDelete = item.entity },
                             onDetails = { onOpenDetail(item.entity.id) },
                         )
@@ -285,37 +347,63 @@ fun ListScreen(vm: MainViewModel, onOpenDetail: (Long) -> Unit, onOpenSettings: 
     }
 }
 
-/** Delete all / delete selected. The files really go: there is no undo. */
+/** حذف الكل أو حذف العناصر المحددة. الحذف نهائي ولا يمكن التراجع عنه. */
 @Composable
 fun BulkDeleteDialog(summary: DeleteSummary, onDismiss: () -> Unit, onConfirm: (alsoFiles: Boolean) -> Unit) {
     var alsoFiles by rememberSaveable { mutableStateOf(true) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (summary.count == 1) "Delete 1 download?" else "Delete ${summary.count} downloads?") },
+
+        title = {
+            Text(
+                if (summary.count == 1)
+                    "هل تريد حذف تنزيل واحد؟"
+                else
+                    "هل تريد حذف عدد ${summary.count} من التنزيلات؟"
+            )
+        },
+
         text = {
             Column {
                 if (summary.completedCount > 0) {
-                    Text("${summary.completedCount} finished · ${Formatters.bytes(summary.bytesOnDisk)} on disk")
+                    Text("${summary.completedCount} مكتمل · ${Formatters.bytes(summary.bytesOnDisk)} على الجهاز")
                 }
+
                 if (summary.activeCount > 0) {
-                    Text("${summary.activeCount} unfinished will be cancelled and their partial data removed.")
+                    Text("سيتم إلغاء ${summary.activeCount} من التنزيلات غير المكتملة وحذف بياناتها الجزئية.")
                 }
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = alsoFiles, onCheckedChange = { alsoFiles = it })
-                    Text("Also delete files from storage")
+                    Text("حذف الملفات من مساحة التخزين أيضًا")
                 }
+
                 Text(
-                    if (alsoFiles) "The files are deleted permanently. This cannot be undone."
-                    else "Only the entries are removed; the files stay in Downloads/XDM.",
+                    if (alsoFiles)
+                        "سيتم حذف الملفات نهائيًا، ولا يمكن التراجع عن ذلك."
+                    else
+                        "ستُحذف السجلات فقط، وستبقى الملفات في مجلد Downloads/XDM.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (alsoFiles) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (alsoFiles)
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },
+
         confirmButton = {
-            TextButton(onClick = { onConfirm(alsoFiles) }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            TextButton(onClick = { onConfirm(alsoFiles) }) {
+                Text("حذف", color = MaterialTheme.colorScheme.error)
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Keep") } },
+
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("احتفاظ")
+            }
+        },
     )
 }
 
@@ -323,7 +411,10 @@ fun BulkDeleteDialog(summary: DeleteSummary, onDismiss: () -> Unit, onConfirm: (
 private fun EmptyState(filter: Filter) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
-            if (filter == Filter.ALL) "No downloads yet.\nTap + or share a link to XDM." else "Nothing here.",
+            if (filter == Filter.ALL)
+                "لا توجد تنزيلات بعد.\nاضغط على + أو شارك رابطًا مع بحمد."
+            else
+                "لا يوجد شيء هنا.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -333,24 +424,43 @@ private fun EmptyState(filter: Filter) {
 @Composable
 fun DeleteDialog(d: DownloadEntity, onDismiss: () -> Unit, onConfirm: (deleteFile: Boolean) -> Unit) {
     var alsoFile by rememberSaveable { mutableStateOf(false) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete download?") },
+
+        title = {
+            Text("هل تريد حذف التنزيل؟")
+        },
+
         text = {
             Column {
                 Text(d.fileName, maxLines = 2, overflow = TextOverflow.Ellipsis)
+
                 if (d.status == DownloadStatus.COMPLETED) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = alsoFile, onCheckedChange = { alsoFile = it })
-                        Text("Also delete the file")
+                        Text("حذف الملف أيضًا")
                     }
                 } else {
-                    Text("Partially downloaded data will be removed.", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        "ستُحذف البيانات التي تم تنزيلها جزئيًا.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(alsoFile) }) { Text("Delete") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Keep") } },
+
+        confirmButton = {
+            TextButton(onClick = { onConfirm(alsoFile) }) {
+                Text("حذف")
+            }
+        },
+
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("احتفاظ")
+            }
+        },
     )
 }
 
@@ -368,23 +478,32 @@ private fun DownloadRow(
     onDetails: () -> Unit,
 ) {
     val d = item.entity
+
     Card(
         modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        colors = if (checked) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else CardDefaults.cardColors(),
+        colors = if (checked)
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        else
+            CardDefaults.cardColors(),
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+
             if (selecting) {
                 Checkbox(checked = checked, onCheckedChange = { onClick() })
                 Spacer(Modifier.width(4.dp))
             }
+
             DownloadIcon(d)
             Spacer(Modifier.width(12.dp))
+
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+
                     if (d.isHls || d.isYoutube) {
                         HlsChip(if (d.isYoutube) "YouTube" else "HLS")
                         Spacer(Modifier.width(6.dp))
                     }
+
                     Text(
                         d.fileName,
                         style = MaterialTheme.typography.titleSmall,
@@ -393,36 +512,55 @@ private fun DownloadRow(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                 }
+
                 if (d.status != DownloadStatus.COMPLETED) {
                     Spacer(Modifier.height(6.dp))
+
                     val fraction = item.fraction
+
                     when {
-                        fraction != null -> LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
-                        d.status == DownloadStatus.RUNNING -> LinearProgressIndicator(Modifier.fillMaxWidth())
+                        fraction != null -> LinearProgressIndicator(
+                            progress = { fraction },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        d.status == DownloadStatus.RUNNING ->
+                            LinearProgressIndicator(Modifier.fillMaxWidth())
                     }
+
                     Spacer(Modifier.height(4.dp))
                 }
+
                 Text(sizeLine(item), style = MaterialTheme.typography.bodySmall)
+
                 Text(
                     statusLine(item, queue),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (d.status == DownloadStatus.FAILED) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (d.status == DownloadStatus.FAILED)
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+
             if (!selecting) RowActions(d, vm, onDelete, onDetails)
         }
     }
 }
 
-/** A finished video gets its thumbnail, everything else the file type icon. */
+/** تظهر صورة مصغرة للفيديو المكتمل، وأيقونة نوع الملف لبقية الملفات. */
 @Composable
 private fun DownloadIcon(d: DownloadEntity) {
     if (d.status == DownloadStatus.COMPLETED && MediaFiles.isMedia(d)) {
         MediaThumbnail(d, Modifier.size(width = 72.dp, height = 44.dp)) {
-            Box(Modifier.size(width = 72.dp, height = 44.dp), contentAlignment = Alignment.Center) { FileTypeIcon(d.fileName, d.mimeType) }
+            Box(
+                Modifier.size(width = 72.dp, height = 44.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                FileTypeIcon(d.fileName, d.mimeType)
+            }
         }
     } else {
         FileTypeIcon(d.fileName, d.mimeType)
@@ -436,87 +574,116 @@ fun RowActions(d: DownloadEntity, vm: MainViewModel, onDelete: () -> Unit, onDet
 
     when (d.status) {
         DownloadStatus.RUNNING, DownloadStatus.QUEUED ->
-            IconButton(onClick = { vm.pause(d.id) }) { Icon(Icons.Filled.Pause, "Pause") }
+            IconButton(onClick = { vm.pause(d.id) }) {
+                Icon(Icons.Filled.Pause, "إيقاف مؤقت")
+            }
+
         DownloadStatus.PAUSED ->
-            IconButton(onClick = { vm.resume(d.id) }) { Icon(Icons.Filled.PlayArrow, "Resume") }
+            IconButton(onClick = { vm.resume(d.id) }) {
+                Icon(Icons.Filled.PlayArrow, "استئناف")
+            }
+
         DownloadStatus.FAILED, DownloadStatus.CANCELLED ->
             if (LinkRefresh.retryRefreshesLink(d)) {
-                IconButton(onClick = { vm.requestLinkRefresh(d.id) }) { Icon(Icons.Filled.Refresh, "Refresh link") }
+                IconButton(onClick = { vm.requestLinkRefresh(d.id) }) {
+                    Icon(Icons.Filled.Refresh, "تحديث الرابط")
+                }
             } else {
-                IconButton(onClick = { vm.retry(d.id) }) { Icon(Icons.Filled.Refresh, "Retry") }
+                IconButton(onClick = { vm.retry(d.id) }) {
+                    Icon(Icons.Filled.Refresh, "إعادة المحاولة")
+                }
             }
+
         DownloadStatus.COMPLETED ->
-            IconButton(onClick = { vm.open(context, d) }) { Icon(Icons.AutoMirrored.Filled.OpenInNew, "Open") }
+            IconButton(onClick = { vm.open(context, d) }) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, "فتح")
+            }
     }
+
     Box {
-        IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
+        IconButton(onClick = { menu = true }) {
+            Icon(Icons.Filled.MoreVert, "المزيد")
+        }
+
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+
             when (d.status) {
                 DownloadStatus.RUNNING, DownloadStatus.QUEUED, DownloadStatus.PAUSED ->
                     DropdownMenuItem(
-                        text = { Text("Cancel") },
+                        text = { Text("إلغاء") },
                         leadingIcon = { Icon(Icons.Filled.Close, null) },
                         onClick = { menu = false; vm.cancel(d.id) },
                     )
+
                 DownloadStatus.COMPLETED -> {
                     DropdownMenuItem(
-                        text = { Text("Open") },
+                        text = { Text("فتح") },
                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
                         onClick = { menu = false; vm.open(context, d) },
                     )
+
                     DropdownMenuItem(
-                        text = { Text("Open with…") },
+                        text = { Text("فتح باستخدام…") },
                         leadingIcon = { Icon(Icons.Filled.Apps, null) },
                         onClick = { menu = false; FileActions.openWith(context, vm.container, d) },
                     )
+
                     DropdownMenuItem(
-                        text = { Text("Share file") },
+                        text = { Text("مشاركة الملف") },
                         leadingIcon = { Icon(Icons.Filled.Share, null) },
                         onClick = { menu = false; FileActions.share(context, vm.container, d) },
                     )
+
                     DropdownMenuItem(
-                        text = { Text("Move to private folder") },
+                        text = { Text("نقل إلى المجلد الخاص") },
                         leadingIcon = { Icon(Icons.Filled.Lock, null) },
                         onClick = { menu = false; vm.moveToPrivate(d) },
                     )
                 }
+
                 else -> Unit
             }
+
             onDetails?.let { open ->
                 DropdownMenuItem(
-                    text = { Text("Details") },
+                    text = { Text("التفاصيل") },
                     leadingIcon = { Icon(Icons.Filled.Info, null) },
                     onClick = { menu = false; open() },
                 )
             }
+
             DropdownMenuItem(
-                text = { Text("Copy link") },
+                text = { Text("نسخ الرابط") },
                 leadingIcon = { Icon(Icons.Filled.ContentCopy, null) },
                 onClick = { menu = false; FileActions.copyLink(context, d.url) },
             )
+
             if (LinkRefresh.retryRefreshesLink(d)) {
                 DropdownMenuItem(
-                    text = { Text("Retry with the same link") },
+                    text = { Text("إعادة المحاولة بالرابط نفسه") },
                     leadingIcon = { Icon(Icons.Filled.PlayArrow, null) },
                     onClick = { menu = false; vm.retry(d.id) },
                 )
             }
+
             if (LinkRefresh.canRefreshFromPage(d)) {
                 DropdownMenuItem(
-                    text = { Text("Refresh link") },
+                    text = { Text("تحديث الرابط") },
                     leadingIcon = { Icon(Icons.Filled.Refresh, null) },
                     onClick = { menu = false; vm.requestLinkRefresh(d.id) },
                 )
             }
+
             if (LinkRefresh.canChangeLink(d)) {
                 DropdownMenuItem(
-                    text = { Text("Change URL…") },
+                    text = { Text("تغيير الرابط…") },
                     leadingIcon = { Icon(Icons.Filled.Link, null) },
                     onClick = { menu = false; vm.changeUrlFor.value = d },
                 )
             }
+
             DropdownMenuItem(
-                text = { Text("Delete") },
+                text = { Text("حذف") },
                 leadingIcon = { Icon(Icons.Filled.Delete, null) },
                 onClick = { menu = false; onDelete() },
             )
@@ -539,7 +706,12 @@ fun HlsChip(label: String = "HLS") {
 @Composable
 fun FileTypeIcon(name: String, mime: String?) {
     val icon = iconFor(name, mime)
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(44.dp)) {
+
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = Modifier.size(44.dp)
+    ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
         }
@@ -549,6 +721,7 @@ fun FileTypeIcon(name: String, mime: String?) {
 private fun iconFor(name: String, mime: String?): ImageVector {
     val ext = name.substringAfterLast('.', "").lowercase()
     val type = MimeTypes.forFileName(name) ?: mime.orEmpty()
+
     return when {
         ext == "apk" -> Icons.Filled.Android
         type.startsWith("video/") -> Icons.Filled.Movie
@@ -561,20 +734,37 @@ private fun iconFor(name: String, mime: String?): ImageVector {
     }
 }
 
-// ---- text helpers shared with the detail screen ----
+// ---- دوال النصوص المشتركة مع شاشة التفاصيل ----
 
 fun sizeLine(item: DownloadItem): String {
     val d = item.entity
+
     return when {
-        d.status == DownloadStatus.COMPLETED -> Formatters.bytes(d.totalBytes)
+        d.status == DownloadStatus.COMPLETED ->
+            Formatters.bytes(d.totalBytes)
+
         d.isHls -> buildString {
-            if (item.segmentsTotal > 0) append("${item.segmentsDone} / ${item.segmentsTotal} segments") else append("Reading playlist…")
-            if (item.downloaded > 0) append(" · ").append(Formatters.bytes(item.downloaded))
-            if (item.total > 0) append(" (~").append(Formatters.bytes(item.total)).append(")")
+            if (item.segmentsTotal > 0) {
+                append("${item.segmentsDone} / ${item.segmentsTotal} مقاطع")
+            } else {
+                append("جارٍ قراءة قائمة التشغيل…")
+            }
+
+            if (item.downloaded > 0) {
+                append(" · ").append(Formatters.bytes(item.downloaded))
+            }
+
+            if (item.total > 0) {
+                append(" (~").append(Formatters.bytes(item.total)).append(")")
+            }
         }
-        item.total > 0 -> "${Formatters.bytes(item.downloaded)} / ${Formatters.bytes(item.total)}" +
-            " (${(item.downloaded * 100 / item.total)}%)"
-        else -> "${Formatters.bytes(item.downloaded)} / unknown size"
+
+        item.total > 0 ->
+            "${Formatters.bytes(item.downloaded)} / ${Formatters.bytes(item.total)}" +
+                " (${(item.downloaded * 100 / item.total)}%)"
+
+        else ->
+            "${Formatters.bytes(item.downloaded)} / حجم غير معروف"
     }
 }
 
@@ -582,19 +772,27 @@ fun effectiveConnections(d: DownloadEntity): Int =
     if (d.isHls) d.connections
     else if (d.notResumable || (d.totalBytes in 1 until SegmentPlanner.SPLIT_THRESHOLD)) 1 else d.connections
 
-/** The active speed cap and the schedule in one compact line; null when neither is set. */
+/** حد السرعة والجدولة في سطر واحد مختصر. */
 fun limitsLine(settings: AppSettings, queue: QueueStatus): String? {
     val parts = buildList {
-        if (settings.speedLimitBytesPerSec > 0) add("Speed limit ${Formatters.speed(settings.speedLimitBytesPerSec)}")
+        if (settings.speedLimitBytesPerSec > 0) {
+            add("حد السرعة ${Formatters.speed(settings.speedLimitBytesPerSec)}")
+        }
+
         if (settings.scheduleEnabled) {
             when {
-                queue.hold == Hold.SCHEDULE -> add("Scheduled: starts at ${queue.startsAt ?: RunGate.clock(settings.scheduleStartMinute)}")
+                queue.hold == Hold.SCHEDULE ->
+                    add("مجدول: يبدأ عند ${queue.startsAt ?: RunGate.clock(settings.scheduleStartMinute)}")
+
                 settings.scheduleStartMinute != settings.scheduleEndMinute ->
-                    add("Schedule ${RunGate.clock(settings.scheduleStartMinute)}–${RunGate.clock(settings.scheduleEndMinute)}")
-                settings.scheduleOnlyCharging -> add("Only while charging")
+                    add("الجدولة ${RunGate.clock(settings.scheduleStartMinute)}–${RunGate.clock(settings.scheduleEndMinute)}")
+
+                settings.scheduleOnlyCharging ->
+                    add("أثناء الشحن فقط")
             }
         }
     }
+
     return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
@@ -605,10 +803,20 @@ private fun InfoCard(text: String, actionLabel: String, onAction: () -> Unit, on
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
     ) {
         Column(Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 4.dp)) {
-            Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) { Text("Dismiss") }
-                TextButton(onClick = onAction) { Text(actionLabel) }
+                TextButton(onClick = onDismiss) {
+                    Text("إخفاء")
+                }
+
+                TextButton(onClick = onAction) {
+                    Text(actionLabel)
+                }
             }
         }
     }
@@ -617,35 +825,64 @@ private fun InfoCard(text: String, actionLabel: String, onAction: () -> Unit, on
 fun statusLine(item: DownloadItem, queue: QueueStatus): String {
     val d = item.entity
     val conn = effectiveConnections(d)
+
     val connText = when {
-        d.isHls -> if (conn == 1) "1 segment at a time" else "$conn parallel segments"
-        conn == 1 -> "1 connection"
-        else -> "$conn connections"
+        d.isHls -> if (conn == 1) "مقطع واحد في كل مرة" else "$conn مقاطع بالتوازي"
+        conn == 1 -> "اتصال واحد"
+        else -> "$conn اتصالات"
     }
-    val resumeNote = if (d.notResumable && d.status != DownloadStatus.COMPLETED) " · not resumable" else ""
+
+    val resumeNote =
+        if (d.notResumable && d.status != DownloadStatus.COMPLETED)
+            " · لا يمكن استئنافه"
+        else
+            ""
+
     return when (d.status) {
+
         DownloadStatus.RUNNING -> {
             val live = item.live
             val speed = live?.bytesPerSecond ?: 0
-            if (live?.converting == true) return "${live.convertLabel} ${live.convertPercent}%"
+
+            if (live?.converting == true) {
+                return "${live.convertLabel} ${live.convertPercent}%"
+            }
+
             buildString {
-                append(live?.statusText ?: "Downloading")
-                if (speed > 0) append(" · ").append(Formatters.speed(speed))
-                if (live != null && live.etaSeconds >= 0) append(" · ETA ").append(Formatters.eta(live.etaSeconds))
+                append(live?.statusText ?: "جارٍ التنزيل")
+
+                if (speed > 0) {
+                    append(" · ").append(Formatters.speed(speed))
+                }
+
+                if (live != null && live.etaSeconds >= 0) {
+                    append(" · الوقت المتبقي ").append(Formatters.eta(live.etaSeconds))
+                }
+
                 append(" · ").append(connText).append(resumeNote)
             }
         }
+
         DownloadStatus.QUEUED -> when (queue.hold) {
-            Hold.WIFI -> "Waiting for Wi-Fi"
-            Hold.SCHEDULE -> "Scheduled" + (queue.startsAt?.let { " · starts at $it" } ?: "")
-            Hold.CHARGING -> "Waiting for the charger"
-            null -> "Queued"
+            Hold.WIFI -> "بانتظار شبكة Wi-Fi"
+            Hold.SCHEDULE -> "مجدول" + (queue.startsAt?.let { " · يبدأ عند $it" } ?: "")
+            Hold.CHARGING -> "بانتظار الشاحن"
+            null -> "في قائمة الانتظار"
         } + resumeNote
-        // A pause by the user has no note; Android's time limit leaves its reason there.
-        DownloadStatus.PAUSED -> (d.error ?: "Paused") + resumeNote
-        DownloadStatus.COMPLETED -> "Completed" + (d.completedAt?.let { " · ${Formatters.dateTime(it)}" } ?: "") +
-            (d.error?.let { "\n$it" } ?: "") // a completed item only carries a non-fatal note
-        DownloadStatus.FAILED -> "Failed" + (d.error?.let { ": $it" } ?: "")
-        DownloadStatus.CANCELLED -> "Cancelled"
+
+        // الإيقاف اليدوي لا يعرض سببًا، أما حد الوقت في النظام فيعرض سببه.
+        DownloadStatus.PAUSED ->
+            (d.error ?: "متوقف مؤقتًا") + resumeNote
+
+        DownloadStatus.COMPLETED ->
+            "مكتمل" +
+                (d.completedAt?.let { " · ${Formatters.dateTime(it)}" } ?: "") +
+                (d.error?.let { "\n$it" } ?: "")
+
+        DownloadStatus.FAILED ->
+            "فشل" + (d.error?.let { ": $it" } ?: "")
+
+        DownloadStatus.CANCELLED ->
+            "أُلغي"
     }
 }

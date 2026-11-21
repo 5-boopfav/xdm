@@ -55,17 +55,17 @@ import com.olaph.xdm.media.MediaKind
 import com.olaph.xdm.media.MediaOption
 import com.olaph.xdm.youtube.YoutubeUrls
 
-/** Floating "download video" button: badge = number of detected items, pulses when a new one shows up. */
+/** زر عائم لتنزيل الفيديو: تعرض الشارة عدد العناصر المكتشفة، وينبض الزر عند اكتشاف عنصر جديد. */
 @Composable
 fun MediaButton(vm: BrowserViewModel, tab: BrowserTab, modifier: Modifier = Modifier) {
     val count = tab.mediaItems.size
 
-    // On a YouTube video, Shorts or playlist page the button opens the YouTube sheet (the page's own player requests
-    // are not sniffed). Home, search and channel pages stay quiet.
+    // في صفحات فيديو YouTube أو Shorts أو قوائم التشغيل، يفتح الزر نافذة YouTube.
+    // لا يتم التقاط طلبات المشغل نفسه، بينما تبقى الصفحة الرئيسية والبحث والقنوات دون تغيير.
     if (vm.isYoutube(tab)) {
         if (!YoutubeUrls.isDownloadablePage(tab.url)) return
         FloatingActionButton(onClick = { vm.openYoutube(tab) }, modifier = modifier) {
-            Icon(Icons.Filled.Download, "Download this YouTube video")
+            Icon(Icons.Filled.Download, "تنزيل فيديو YouTube هذا")
         }
         return
     }
@@ -80,12 +80,12 @@ fun MediaButton(vm: BrowserViewModel, tab: BrowserTab, modifier: Modifier = Modi
     }
     FloatingActionButton(onClick = { tab.mediaSheetOpen = true }, modifier = modifier.scale(scale.value)) {
         BadgedBox(badge = { Badge { Text(count.toString()) } }) {
-            Icon(Icons.Filled.Download, "Download video ($count found)")
+            Icon(Icons.Filled.Download, "تنزيل الفيديو ($count عنصر مكتشف)")
         }
     }
 }
 
-/** Bottom sheet with everything found on the page; tapping a row opens the usual "Add download" sheet. */
+/** نافذة سفلية تعرض جميع الوسائط المكتشفة في الصفحة؛ الضغط على عنصر يفتح نافذة إضافة التنزيل. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaSheet(vm: BrowserViewModel, tab: BrowserTab) {
@@ -95,9 +95,9 @@ fun MediaSheet(vm: BrowserViewModel, tab: BrowserTab) {
 
     ModalBottomSheet(onDismissRequest = { tab.mediaSheetOpen = false }, sheetState = sheetState) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp)) {
-            Text("Videos on this page", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 20.dp))
+            Text("الفيديوهات في هذه الصفحة", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 20.dp))
             Text(
-                "Saved as “$title”",
+                "سيتم الحفظ باسم «$title»",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -109,7 +109,7 @@ fun MediaSheet(vm: BrowserViewModel, tab: BrowserTab) {
             PrivateCheckbox(savePrivate, vaultReady, { vm.mediaSavePrivate = it }, Modifier.padding(horizontal = 8.dp))
             if (items.isEmpty()) {
                 Text(
-                    "Nothing found yet. Start playing the video and it will show up here.",
+                    "لم يتم العثور على أي وسائط بعد. ابدأ بتشغيل الفيديو وستظهر هنا.",
                     modifier = Modifier.padding(20.dp),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -121,8 +121,8 @@ fun MediaSheet(vm: BrowserViewModel, tab: BrowserTab) {
                 }
             }
             Text(
-                "DRM-protected streams (Netflix, Disney+, …) can't be downloaded. " +
-                    "Live streams and DASH are not supported yet. Streams in HLS are saved as .ts (or .mp4 for fMP4) without conversion.",
+                "لا يمكن تنزيل البث المحمي بنظام DRM (مثل Netflix وDisney+). " +
+                    "البث المباشر وDASH غير مدعومين حالياً. يتم حفظ بث HLS بصيغة .ts (أو .mp4 عند استخدام fMP4) دون تحويل.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
@@ -133,7 +133,7 @@ fun MediaSheet(vm: BrowserViewModel, tab: BrowserTab) {
 
 @Composable
 private fun MediaGroup(media: DetectedMedia, onPick: (MediaOption) -> Unit) {
-    // A master playlist gets a small header with its qualities underneath; a single file is one row.
+    // تعرض قائمة التشغيل الرئيسية عنواناً صغيراً وتحته الجودات المتاحة، أما الملف الواحد فيظهر كسطر واحد.
     if (media.options.size > 1) {
         Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             TypeChip(media.typeLabel)
@@ -232,6 +232,6 @@ private fun TypeChip(label: String) {
 private fun PlayingMark() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Filled.PlayArrow, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-        Text("Playing", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text("قيد التشغيل", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
     }
 }

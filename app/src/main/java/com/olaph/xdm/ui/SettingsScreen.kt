@@ -63,8 +63,12 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text("الإعدادات") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "رجوع")
+                    }
+                },
             )
         },
     ) { padding ->
@@ -76,13 +80,13 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             SliderSetting(
-                title = "Default connections per download",
+                title = "عدد الاتصالات الافتراضي لكل تنزيل",
                 value = settings.connections,
                 range = 1..16,
                 onCommit = vm::setConnections,
             )
             SliderSetting(
-                title = "Max parallel downloads",
+                title = "الحد الأقصى للتنزيلات المتزامنة",
                 value = settings.maxParallel,
                 range = 1..10,
                 onCommit = vm::setMaxParallel,
@@ -94,9 +98,9 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Wi-Fi only", style = MaterialTheme.typography.titleSmall)
+                    Text("شبكة Wi-Fi فقط", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Wait while connected to a metered network (mobile data, hotspot)",
+                        "انتظر حتى الاتصال بشبكة غير محدودة، مثل بيانات الهاتف أو نقطة الاتصال",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -108,12 +112,12 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Resume downloads after restart", style = MaterialTheme.typography.titleSmall)
+                    Text("استئناف التنزيلات بعد إعادة التشغيل", style = MaterialTheme.typography.titleSmall)
                     Text(
                         if (Build.VERSION.SDK_INT >= RestartResume.BOOT_FGS_RESTRICTED_SDK) {
-                            "After a reboot, a notification offers to resume interrupted downloads (Android doesn't let them start on their own). After an app update they continue by themselves."
+                            "بعد إعادة تشغيل الجهاز، سيظهر إشعار يتيح استئناف التنزيلات المتوقفة، لأن أندرويد لا يسمح ببدئها تلقائياً. أما بعد تحديث التطبيق فتستمر تلقائياً."
                         } else {
-                            "Interrupted downloads continue by themselves after a reboot or an app update"
+                            "تستمر التنزيلات المتوقفة تلقائياً بعد إعادة تشغيل الجهاز أو تحديث التطبيق."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -135,24 +139,24 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             BackgroundSettings()
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            Text("Private folder", style = MaterialTheme.typography.titleMedium)
+            Text("المجلد الخاص", style = MaterialTheme.typography.titleMedium)
             Row(
                 Modifier.fillMaxWidth().clickable { vm.setSavePrivateByDefault(!settings.savePrivateByDefault) }.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Save new downloads to private folder", style = MaterialTheme.typography.titleSmall)
+                    Text("حفظ التنزيلات الجديدة في المجلد الخاص", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Ticks \"Save to private folder\" in the add sheets by default. Needs a PIN (lock icon in Downloads).",
+                        "تفعيل خيار «الحفظ في المجلد الخاص» تلقائياً عند إضافة التنزيلات. يتطلب تعيين رمز PIN (أيقونة القفل في صفحة التنزيلات).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Switch(checked = settings.savePrivateByDefault, onCheckedChange = vm::setSavePrivateByDefault)
             }
-            Text("Lock the private folder", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+            Text("قفل المجلد الخاص", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
             Text(
-                "When XDM goes to the background. Turning the screen off always locks it.",
+                "عند انتقال بحمد إلى الخلفية. كما يتم قفله دائماً عند إطفاء الشاشة.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -167,7 +171,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             }
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            Text("Theme", style = MaterialTheme.typography.titleSmall)
+            Text("المظهر", style = MaterialTheme.typography.titleSmall)
             ThemeMode.entries.forEach { mode ->
                 Row(
                     Modifier.fillMaxWidth().clickable { vm.setTheme(mode) },
@@ -176,16 +180,16 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                     RadioButton(selected = settings.theme == mode, onClick = { vm.setTheme(mode) })
                     Text(
                         when (mode) {
-                            ThemeMode.SYSTEM -> "System default"
-                            ThemeMode.LIGHT -> "Light"
-                            ThemeMode.DARK -> "Dark"
+                            ThemeMode.SYSTEM -> "حسب إعدادات النظام"
+                            ThemeMode.LIGHT -> "فاتح"
+                            ThemeMode.DARK -> "داكن"
                         },
                     )
                 }
             }
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            Text("Browser search engine", style = MaterialTheme.typography.titleSmall)
+            Text("محرك البحث في المتصفح", style = MaterialTheme.typography.titleSmall)
             SearchEngine.entries.forEach { engine ->
                 Row(
                     Modifier.fillMaxWidth().clickable { vm.setSearchEngine(engine) },
@@ -200,9 +204,9 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Intercept all browser downloads", style = MaterialTheme.typography.titleSmall)
+                    Text("اعتراض جميع تنزيلات المتصفح", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Send downloads started in the built-in browser to XDM instead of the system downloader",
+                        "تحويل التنزيلات التي تبدأ من المتصفح المدمج إلى بحمد بدلاً من مدير التنزيلات الافتراضي للنظام.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -214,10 +218,10 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Convert HLS to MP4", style = MaterialTheme.typography.titleSmall)
+                    Text("تحويل HLS إلى MP4", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Turn finished HLS videos (MPEG-TS) into a normal .mp4 that plays in any gallery or player. " +
-                            "No re-encoding; needs free space about the size of the video.",
+                        "تحويل فيديوهات HLS المكتملة (MPEG-TS) إلى ملفات MP4 عادية تعمل في أي معرض صور أو مشغل فيديو. " +
+                            "لا تتم إعادة ترميز الفيديو، لكن يلزم توفر مساحة فارغة تقارب حجم الفيديو.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -229,10 +233,9 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Refresh expired links automatically", style = MaterialTheme.typography.titleSmall)
+                    Text("تحديث الروابط المنتهية تلقائياً", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "When a download fails with HTTP 403 or 410, XDM opens its page in the background and takes over a file of exactly " +
-                            "the same size. Not for private downloads, HLS or YouTube.",
+                        "عندما يفشل التنزيل بسبب خطأ HTTP 403 أو 410، يفتح بحمد صفحة الملف في الخلفية ويحاول الحصول على رابط جديد لملف بالحجم نفسه تماماً. لا يعمل مع التنزيلات الخاصة أو HLS أو YouTube.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -241,10 +244,9 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             }
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            Text("Default YouTube quality", style = MaterialTheme.typography.titleSmall)
+            Text("جودة YouTube الافتراضية", style = MaterialTheme.typography.titleSmall)
             Text(
-                "\"Ask every time\" shows the format list for each YouTube link; any other choice adds the download " +
-                    "straight away (the closest lower resolution if a video doesn't have it).",
+                "خيار «السؤال في كل مرة» يعرض قائمة الصيغ عند إضافة كل رابط من YouTube. أما الخيارات الأخرى فتضيف التنزيل مباشرة، مع اختيار أقرب دقة أقل إذا لم تكن الدقة المطلوبة متاحة.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -269,14 +271,14 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(16.dp))
             var licensesOpen by remember { mutableStateOf(false) }
             Text(
-                "About & licenses",
+                "حول التطبيق والتراخيص",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.fillMaxWidth().clickable { licensesOpen = true }.padding(vertical = 8.dp),
             )
             if (licensesOpen) LicensesDialog(vm) { licensesOpen = false }
             Spacer(Modifier.height(8.dp))
             Text(
-                "XDM ${BuildConfig.VERSION_NAME}",
+                "بحمد ${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -289,15 +291,15 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
     val info by vm.filterListsInfo.collectAsStateWithLifecycle()
     val update by vm.filterListsUpdate.collectAsStateWithLifecycle()
 
-    Text("Ad blocker", style = MaterialTheme.typography.titleMedium)
+    Text("حاجب الإعلانات", style = MaterialTheme.typography.titleMedium)
     Row(
         Modifier.fillMaxWidth().clickable { vm.setBlockAds(!settings.blockAds) }.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Block ads", style = MaterialTheme.typography.titleSmall)
+            Text("حظر الإعلانات", style = MaterialTheme.typography.titleSmall)
             Text(
-                "In the built-in browser: blocks ad and tracker requests with filter lists (EasyList, AdGuard) and hides ad elements",
+                "في المتصفح المدمج: يحظر طلبات الإعلانات وأدوات التتبع باستخدام قوائم التصفية مثل EasyList وAdGuard، كما يخفي عناصر الإعلانات.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -305,12 +307,12 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
         Switch(checked = settings.blockAds, onCheckedChange = vm::setBlockAds)
     }
 
-    Text("Block pop-ups", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+    Text("حظر النوافذ المنبثقة", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
     Text(
         when (settings.popupMode) {
-            PopupMode.OFF -> "Pages may open new windows"
-            PopupMode.ADS_ONLY -> "Blocks ad pop-ups and windows opened without a tap"
-            PopupMode.ALL -> "Blocks every window a page opens; \"Open\" in the notice still opens it"
+            PopupMode.OFF -> "يُسمح للصفحات بفتح نوافذ جديدة."
+            PopupMode.ADS_ONLY -> "حظر النوافذ المنبثقة الإعلانية والنوافذ التي تُفتح دون النقر عليها."
+            PopupMode.ALL -> "حظر جميع النوافذ التي تحاول الصفحة فتحها. يظل خيار «فتح» في الإشعار متاحاً لفتحها."
         },
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -319,18 +321,24 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
         PopupMode.entries.forEach { mode ->
             Row(Modifier.clickable { vm.setPopupMode(mode) }.padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 RadioButton(selected = settings.popupMode == mode, onClick = { vm.setPopupMode(mode) })
-                Text(mode.label)
+                Text(
+                    when (mode) {
+                        PopupMode.OFF -> "إيقاف"
+                        PopupMode.ADS_ONLY -> "الإعلانات فقط"
+                        PopupMode.ALL -> "الكل"
+                    }
+                )
             }
         }
     }
 
     Column(Modifier.padding(vertical = 8.dp)) {
-        Text("Filter lists", style = MaterialTheme.typography.titleSmall)
+        Text("قوائم التصفية", style = MaterialTheme.typography.titleSmall)
         Text(
             when {
-                info.loading -> "Loading…"
-                !info.loaded -> "Not loaded"
-                else -> "%,d rules active · loaded in %.1f s%s".format(info.totalRules, info.loadMillis / 1000.0, if (info.fromCache) " (cached)" else "")
+                info.loading -> "جارٍ التحميل…"
+                !info.loaded -> "لم يتم التحميل"
+                else -> "%,d قاعدة نشطة · اكتمل التحميل خلال %.1f ثانية%s".format(info.totalRules, info.loadMillis / 1000.0, if (info.fromCache) " (من الذاكرة المؤقتة)" else "")
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -347,11 +355,11 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
                 val date = if (list.updatedAtMillis > 0) dateFormat.format(java.util.Date(list.updatedAtMillis)) else null
                 Text(
                     when {
-                        !list.enabled -> "Off"
+                        !list.enabled -> "متوقف"
                         !info.loaded -> "…"
-                        !list.updatable -> "%,d rules · built in".format(list.ruleCount)
-                        date == null -> "%,d rules".format(list.ruleCount)
-                        else -> "%,d rules · %s %s".format(list.ruleCount, if (list.bundled) "snapshot of" else "updated", date)
+                        !list.updatable -> "%,d قاعدة · مدمجة في التطبيق".format(list.ruleCount)
+                        date == null -> "%,d قاعدة".format(list.ruleCount)
+                        else -> "%,d قاعدة · %s %s".format(list.ruleCount, if (list.bundled) "نسخة من" else "آخر تحديث:", date)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -364,7 +372,7 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
         when (val u = update) {
             is UpdateState.Failed -> Text(u.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             is UpdateState.Done -> {
-                Text("Updated %d list%s: %,d rules active".format(u.updated, if (u.updated == 1) "" else "s", u.totalRules), style = MaterialTheme.typography.bodySmall)
+                Text("تم تحديث %d قائمة · إجمالي القواعد النشطة: %,d".format(u.updated, u.totalRules), style = MaterialTheme.typography.bodySmall)
                 u.failures.forEach { (title, reason) ->
                     Text("$title: $reason", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
@@ -373,20 +381,20 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { vm.clearFilterListsResult(); vm.updateFilterLists() }, enabled = update !is UpdateState.Running) {
-                Text(if (update is UpdateState.Running) "Updating…" else "Update filter lists")
+                Text(if (update is UpdateState.Running) "جارٍ التحديث…" else "تحديث قوائم التصفية")
             }
             if (update is UpdateState.Running) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
         }
         if (settings.wifiOnly) {
-            Text("Downloads only on Wi-Fi (Wi-Fi only is on)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("التنزيل عبر Wi-Fi فقط (الخيار مفعّل)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 
     val sites = settings.adAllowedSites.sorted()
     Column(Modifier.padding(vertical = 8.dp)) {
-        Text("Allowed sites (${sites.size})", style = MaterialTheme.typography.titleSmall)
+        Text("المواقع المسموح بها (${sites.size})", style = MaterialTheme.typography.titleSmall)
         Text(
-            if (sites.isEmpty()) "Sites where you allowed ads appear here" else "Ads are not blocked on these sites",
+            if (sites.isEmpty()) "ستظهر هنا المواقع التي سمحت بظهور الإعلانات فيها." else "لا يتم حظر الإعلانات في هذه المواقع.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -394,7 +402,9 @@ private fun AdBlockSettings(vm: MainViewModel, settings: AppSettings) {
     sites.forEach { site ->
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(site, Modifier.weight(1f).padding(start = 8.dp))
-            IconButton(onClick = { vm.removeAllowedSite(site) }) { Icon(Icons.Filled.Close, "Remove $site") }
+            IconButton(onClick = { vm.removeAllowedSite(site) }) {
+                Icon(Icons.Filled.Close, "إزالة $site")
+            }
         }
     }
 }
@@ -408,9 +418,9 @@ private fun CrashReportSettings(vm: MainViewModel) {
 
     if (!vm.crashReportsAvailable) {
         Column(Modifier.padding(vertical = 8.dp)) {
-            Text("Send crash reports", style = MaterialTheme.typography.titleSmall)
+            Text("إرسال تقارير الأعطال", style = MaterialTheme.typography.titleSmall)
             Text(
-                "Crash reports are not set up in this build.",
+                "لم يتم إعداد تقارير الأعطال في هذا الإصدار.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -423,10 +433,10 @@ private fun CrashReportSettings(vm: MainViewModel) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Send crash reports", style = MaterialTheme.typography.titleSmall)
+            Text("إرسال تقارير الأعطال", style = MaterialTheme.typography.titleSmall)
             Text(
-                "If the app crashes, send the error details to the developer on the next start. " +
-                    "No links, page titles, file names or browsing history are included.",
+                "إذا توقف التطبيق عن العمل بشكل مفاجئ، فسيتم إرسال تفاصيل الخطأ إلى المطور عند تشغيل التطبيق مرة أخرى. " +
+                    "لا يتم تضمين الروابط أو عناوين الصفحات أو أسماء الملفات أو سجل التصفح.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -438,11 +448,11 @@ private fun CrashReportSettings(vm: MainViewModel) {
             sending = true
             scope.launch {
                 val message = when (vm.sendTestCrashReport()) {
-                    TestReportResult.SENT -> "Test report sent"
-                    TestReportResult.RETRY_LATER -> "Could not send now, will retry later"
-                    TestReportResult.REJECTED -> "Test report was rejected by the server"
-                    TestReportResult.DISABLED -> "Turn on Send crash reports first"
-                    TestReportResult.UNAVAILABLE -> "Crash reports are not set up in this build"
+                    TestReportResult.SENT -> "تم إرسال التقرير التجريبي."
+                    TestReportResult.RETRY_LATER -> "تعذر الإرسال الآن، ستتم إعادة المحاولة لاحقاً."
+                    TestReportResult.REJECTED -> "رفض الخادم التقرير التجريبي."
+                    TestReportResult.DISABLED -> "فعّل خيار إرسال تقارير الأعطال أولاً."
+                    TestReportResult.UNAVAILABLE -> "لم يتم إعداد تقارير الأعطال في هذا الإصدار."
                 }
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 sending = false
@@ -450,7 +460,7 @@ private fun CrashReportSettings(vm: MainViewModel) {
         },
         enabled = enabled && !sending,
     ) {
-        Text(if (sending) "Sending…" else "Send test report")
+        Text(if (sending) "جارٍ الإرسال…" else "إرسال تقرير تجريبي")
     }
 }
 
@@ -458,17 +468,17 @@ private fun CrashReportSettings(vm: MainViewModel) {
 private fun LicensesDialog(vm: MainViewModel, onDismiss: () -> Unit) {
     val texts = remember {
         listOf(
-            "YouTube support (NewPipeExtractor)" to vm.licenseText("licenses/newpipe-extractor-NOTICE.txt"),
-            "Filter lists" to vm.licenseText("licenses/filter-lists-NOTICE.txt"),
-            "StevenBlack/hosts — MIT License" to vm.licenseText("licenses/stevenblack-hosts-LICENSE.txt"),
-            "GNU General Public License v3 (NewPipeExtractor, EasyList, AdGuard filters)" to vm.licenseText("licenses/GPL-3.0.txt"),
-            "Mozilla Public License 2.0 (Public Suffix List)" to vm.licenseText("licenses/MPL-2.0.txt"),
+            "دعم YouTube (NewPipeExtractor)" to vm.licenseText("licenses/newpipe-extractor-NOTICE.txt"),
+            "قوائم التصفية" to vm.licenseText("licenses/filter-lists-NOTICE.txt"),
+            "StevenBlack/hosts — ترخيص MIT" to vm.licenseText("licenses/stevenblack-hosts-LICENSE.txt"),
+            "رخصة GNU العامة الإصدار الثالث (NewPipeExtractor ومرشحات EasyList وAdGuard)" to vm.licenseText("licenses/GPL-3.0.txt"),
+            "رخصة Mozilla العامة الإصدار 2.0 (قائمة النطاقات العامة)" to vm.licenseText("licenses/MPL-2.0.txt"),
         )
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-        title = { Text("About & licenses") },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("إغلاق") } },
+        title = { Text("حول التطبيق والتراخيص") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 texts.forEach { (title, body) ->
@@ -506,7 +516,7 @@ private fun SliderSetting(title: String, value: Int, range: IntRange, onCommit: 
 private fun UserAgentSetting(current: String, onSave: (String) -> Unit) {
     var text by remember(current) { mutableStateOf(current) }
     Column {
-        Text("User-Agent", style = MaterialTheme.typography.titleSmall)
+        Text("معرّف المتصفح (User-Agent)", style = MaterialTheme.typography.titleSmall)
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
@@ -515,9 +525,11 @@ private fun UserAgentSetting(current: String, onSave: (String) -> Unit) {
             maxLines = 4,
         )
         Row {
-            TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank() && text != current) { Text("Save") }
+            TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank() && text != current) {
+                Text("حفظ")
+            }
             TextButton(onClick = { onSave(AppSettings.DEFAULT_USER_AGENT) }, enabled = current != AppSettings.DEFAULT_USER_AGENT) {
-                Text("Reset to Chrome default")
+                Text("إعادة ضبط إلى إعداد Chrome الافتراضي")
             }
         }
     }

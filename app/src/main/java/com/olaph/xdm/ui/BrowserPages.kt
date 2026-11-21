@@ -54,7 +54,7 @@ import com.olaph.xdm.browser.BrowserTab
 import com.olaph.xdm.browser.BrowserViewModel
 import com.olaph.xdm.engine.UrlInput
 
-// ---- home / speed dial ----
+// ---- الصفحة الرئيسية / الاتصال السريع ----
 
 @Composable
 fun BrowserHome(vm: BrowserViewModel, tab: BrowserTab) {
@@ -71,11 +71,14 @@ fun BrowserHome(vm: BrowserViewModel, tab: BrowserTab) {
     ) {
         if (tab.incognito) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Icon(Icons.Filled.VisibilityOff, null, Modifier.size(40.dp))
-                    Text("Incognito tab", style = MaterialTheme.typography.titleMedium)
+                    Text("علامة تبويب للتصفح الخفي", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "History is not saved and the cookies of this session are removed when the last incognito tab is closed.",
+                        "لن يُحفظ سجل التصفح، وستُحذف ملفات تعريف الارتباط الخاصة بهذه الجلسة عند إغلاق آخر علامة تبويب خفية.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -83,23 +86,31 @@ fun BrowserHome(vm: BrowserViewModel, tab: BrowserTab) {
                 }
             }
         }
-        item(span = { GridItemSpan(maxLineSpan) }) { Text("Speed dial", style = MaterialTheme.typography.titleSmall) }
+
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Text("الاتصال السريع", style = MaterialTheme.typography.titleSmall)
+        }
+
         if (bookmarks.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
-                    "Bookmark a page from the menu and it shows up here.",
+                    "أضف صفحة إلى الإشارات المرجعية من القائمة لتظهر هنا.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+
         items(bookmarks, key = { "b${it.id}" }) { b ->
             Column(
                 Modifier.clickable { vm.openUrl(b.url) }.padding(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(
-                    Modifier.size(52.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                    Modifier.size(52.dp).background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        CircleShape
+                    ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -108,14 +119,34 @@ fun BrowserHome(vm: BrowserViewModel, tab: BrowserTab) {
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
-                Text(b.title, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
+                Text(
+                    b.title,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
+
         if (recent.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) { Text("Recent", style = MaterialTheme.typography.titleSmall) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text("الأخيرة", style = MaterialTheme.typography.titleSmall)
+            }
+
             items(recent, key = { "h${it.id}" }, span = { GridItemSpan(maxLineSpan) }) { h ->
-                Column(Modifier.fillMaxWidth().clickable { vm.openUrl(h.url) }.padding(vertical = 6.dp)) {
-                    Text(h.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+                Column(
+                    Modifier.fillMaxWidth()
+                        .clickable { vm.openUrl(h.url) }
+                        .padding(vertical = 6.dp)
+                ) {
+                    Text(
+                        h.title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
                     Text(
                         h.url,
                         maxLines = 1,
@@ -129,7 +160,7 @@ fun BrowserHome(vm: BrowserViewModel, tab: BrowserTab) {
     }
 }
 
-// ---- tab switcher ----
+// ---- مبدّل علامات التبويب ----
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,12 +168,24 @@ fun TabSwitcherPage(vm: BrowserViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tabs (${vm.tabs.size})") },
-                navigationIcon = { IconButton(onClick = { vm.page = BrowserPage.TAB }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text("علامات التبويب (${vm.tabs.size})") },
+                navigationIcon = {
+                    IconButton(onClick = { vm.page = BrowserPage.TAB }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "رجوع")
+                    }
+                },
                 actions = {
-                    IconButton(onClick = { vm.closeAllTabs() }) { Icon(Icons.Filled.DeleteSweep, "Close all tabs") }
-                    IconButton(onClick = { vm.newTab(incognito = true) }) { Icon(Icons.Filled.VisibilityOff, "New incognito tab") }
-                    IconButton(onClick = { vm.newTab() }) { Icon(Icons.Filled.Add, "New tab") }
+                    IconButton(onClick = { vm.closeAllTabs() }) {
+                        Icon(Icons.Filled.DeleteSweep, "إغلاق جميع علامات التبويب")
+                    }
+
+                    IconButton(onClick = { vm.newTab(incognito = true) }) {
+                        Icon(Icons.Filled.VisibilityOff, "علامة تبويب خفية جديدة")
+                    }
+
+                    IconButton(onClick = { vm.newTab() }) {
+                        Icon(Icons.Filled.Add, "علامة تبويب جديدة")
+                    }
                 },
             )
         },
@@ -156,30 +199,58 @@ fun TabSwitcherPage(vm: BrowserViewModel) {
         ) {
             items(vm.tabs.toList(), key = { it.id }) { tab ->
                 val selected = tab.id == vm.currentId
+
                 Card(
                     onClick = { vm.selectTab(tab.id) },
-                    border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                    border = if (selected) {
+                        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                    } else null,
                     colors = CardDefaults.cardColors(
-                        containerColor = if (tab.incognito) MaterialTheme.colorScheme.inverseSurface else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (tab.incognito) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        containerColor = if (tab.incognito) {
+                            MaterialTheme.colorScheme.inverseSurface
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        contentColor = if (tab.incognito) {
+                            MaterialTheme.colorScheme.inverseOnSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     ),
                 ) {
-                    Row(Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (tab.incognito) Icon(Icons.Filled.VisibilityOff, null, Modifier.size(16.dp))
+                    Row(
+                        Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (tab.incognito) {
+                            Icon(Icons.Filled.VisibilityOff, null, Modifier.size(16.dp))
+                        }
+
                         Text(
                             tab.displayTitle,
-                            modifier = Modifier.weight(1f).padding(start = if (tab.incognito) 6.dp else 0.dp),
+                            modifier = Modifier.weight(1f)
+                                .padding(start = if (tab.incognito) 6.dp else 0.dp),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.labelLarge,
                         )
-                        IconButton(onClick = { vm.closeTab(tab.id) }, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.Filled.Close, "Close tab", Modifier.size(18.dp))
+
+                        IconButton(
+                            onClick = { vm.closeTab(tab.id) },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Filled.Close, "إغلاق علامة التبويب", Modifier.size(18.dp))
                         }
                     }
+
                     Text(
-                        if (tab.showHome) "Home" else tab.url.orEmpty(),
-                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 16.dp, top = 8.dp),
+                        if (tab.showHome) "الرئيسية" else tab.url.orEmpty(),
+                        modifier = Modifier.padding(
+                            start = 12.dp,
+                            end = 12.dp,
+                            bottom = 16.dp,
+                            top = 8.dp
+                        ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodySmall,
@@ -190,30 +261,49 @@ fun TabSwitcherPage(vm: BrowserViewModel) {
     }
 }
 
-// ---- bookmarks / history ----
+// ---- الإشارات المرجعية / سجل التصفح ----
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookmarksPage(vm: BrowserViewModel) {
     val bookmarks by vm.bookmarks.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bookmarks") },
-                navigationIcon = { IconButton(onClick = { vm.page = BrowserPage.TAB }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text("الإشارات المرجعية") },
+                navigationIcon = {
+                    IconButton(onClick = { vm.page = BrowserPage.TAB }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "رجوع")
+                    }
+                },
             )
         },
     ) { padding ->
         if (bookmarks.isEmpty()) {
-            EmptyMessage(padding, "No bookmarks yet")
+            EmptyMessage(padding, "لا توجد إشارات مرجعية حتى الآن")
         } else {
             LazyColumn(Modifier.padding(padding).fillMaxSize()) {
                 items(bookmarks, key = { it.id }) { b ->
                     ListItem(
-                        headlineContent = { Text(b.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = { Text(b.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        headlineContent = {
+                            Text(
+                                b.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                b.url,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         trailingContent = {
-                            IconButton(onClick = { vm.removeBookmark(b.id) }) { Icon(Icons.Filled.Delete, "Remove bookmark") }
+                            IconButton(onClick = { vm.removeBookmark(b.id) }) {
+                                Icon(Icons.Filled.Delete, "إزالة الإشارة المرجعية")
+                            }
                         },
                         modifier = Modifier.clickable { vm.openUrl(b.url) },
                     )
@@ -228,29 +318,51 @@ fun BookmarksPage(vm: BrowserViewModel) {
 fun HistoryPage(vm: BrowserViewModel) {
     val history by vm.history.collectAsStateWithLifecycle()
     var confirmClear by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("History") },
-                navigationIcon = { IconButton(onClick = { vm.page = BrowserPage.TAB }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text("سجل التصفح") },
+                navigationIcon = {
+                    IconButton(onClick = { vm.page = BrowserPage.TAB }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "رجوع")
+                    }
+                },
                 actions = {
-                    IconButton(onClick = { confirmClear = true }, enabled = history.isNotEmpty()) {
-                        Icon(Icons.Filled.DeleteSweep, "Clear history")
+                    IconButton(
+                        onClick = { confirmClear = true },
+                        enabled = history.isNotEmpty()
+                    ) {
+                        Icon(Icons.Filled.DeleteSweep, "مسح سجل التصفح")
                     }
                 },
             )
         },
     ) { padding ->
         if (history.isEmpty()) {
-            EmptyMessage(padding, "No history")
+            EmptyMessage(padding, "سجل التصفح فارغ")
         } else {
             LazyColumn(Modifier.padding(padding).fillMaxSize()) {
                 items(history, key = { it.id }) { h ->
                     ListItem(
-                        headlineContent = { Text(h.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = { Text(h.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        headlineContent = {
+                            Text(
+                                h.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                h.url,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         trailingContent = {
-                            IconButton(onClick = { vm.removeHistory(h.id) }) { Icon(Icons.Filled.Close, "Remove from history") }
+                            IconButton(onClick = { vm.removeHistory(h.id) }) {
+                                Icon(Icons.Filled.Close, "إزالة من سجل التصفح")
+                            }
                         },
                         modifier = Modifier.clickable { vm.openUrl(h.url) },
                     )
@@ -258,20 +370,42 @@ fun HistoryPage(vm: BrowserViewModel) {
             }
         }
     }
+
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("Clear browsing history?") },
-            text = { Text("All ${history.size} entries will be removed. Bookmarks are kept.") },
-            confirmButton = { TextButton(onClick = { vm.clearHistory(); confirmClear = false }) { Text("Clear") } },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Cancel") } },
+            title = { Text("مسح سجل التصفح؟") },
+            text = {
+                Text("سيتم حذف جميع الإدخالات وعددها ${history.size}. ستبقى الإشارات المرجعية محفوظة.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.clearHistory()
+                        confirmClear = false
+                    }
+                ) {
+                    Text("مسح")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClear = false }) {
+                    Text("إلغاء")
+                }
+            },
         )
     }
 }
 
 @Composable
 private fun EmptyMessage(padding: PaddingValues, text: String) {
-    Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Box(
+        Modifier.padding(padding).fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

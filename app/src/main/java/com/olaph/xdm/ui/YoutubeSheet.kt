@@ -74,17 +74,29 @@ private sealed interface YtState {
     data class Playlist(val list: YtPlaylist) : YtState
 }
 
-private class DuplicateOne(val info: YtInfo, val option: YtOption, val options: List<YtOption>, val rememberIt: Boolean, val match: DuplicateMatch)
+private class DuplicateOne(
+    val info: YtInfo,
+    val option: YtOption,
+    val options: List<YtOption>,
+    val rememberIt: Boolean,
+    val match: DuplicateMatch
+)
 
 private class DuplicateMany(val check: BatchCheck<YtPlaylistItem>)
 
-/** Qualities offered for a whole playlist (the "ask" entry makes no sense there). */
-private val PLAYLIST_QUALITIES = listOf(YoutubeQuality.BEST, YoutubeQuality.P1080, YoutubeQuality.P720, YoutubeQuality.P480, YoutubeQuality.AUDIO)
+/** خيارات الجودة لقائمة تشغيل كاملة؛ خيار «اسألني» غير مناسب هنا. */
+private val PLAYLIST_QUALITIES = listOf(
+    YoutubeQuality.BEST,
+    YoutubeQuality.P1080,
+    YoutubeQuality.P720,
+    YoutubeQuality.P480,
+    YoutubeQuality.AUDIO
+)
 
 /**
- * The YouTube sheet: looks the link up and offers the formats (video, playlist). With a default quality set in
- * Settings a single video is added straight away and the sheet only shows what it is doing. [onDone] gets a short
- * message for the caller to toast once something was added.
+ * نافذة YouTube: تبحث عن الرابط وتعرض الصيغ المتاحة، سواء كان فيديو أو قائمة تشغيل.
+ * عند تحديد جودة افتراضية من الإعدادات، تتم إضافة الفيديو مباشرة وتعرض النافذة حالة العملية فقط.
+ * تستقبل [onDone] رسالة مختصرة ليعرضها التطبيق بعد إضافة التنزيل.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,33 +109,67 @@ fun YoutubeSheet(
     defaultPrivate: Boolean,
     onDismiss: () -> Unit,
     onDone: (String) -> Unit,
-    /** "Open existing" in the duplicate dialog: show download [id] (the sheet is closed afterwards). */
+    /** خيار «فتح الموجود» في نافذة التنزيل المكرر: يعرض التنزيل [id] ثم يغلق النافذة. */
     onOpenExisting: (Long) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     var target by remember(link) { mutableStateOf(link) }
     var state by remember(link) { mutableStateOf<YtState>(YtState.Loading) }
     var rememberChoice by remember(link) { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    var playlistQuality by remember { mutableStateOf(defaultQuality.takeIf { it != YoutubeQuality.ASK } ?: YoutubeQuality.P720) }
+
+    var playlistQuality by remember {
+        mutableStateOf(
+            defaultQuality.takeIf { it != YoutubeQuality.ASK } ?: YoutubeQuality.P720
+        )
+    }
+
     var savePrivate by remember { mutableStateOf(defaultPrivate) }
     val toPrivate = savePrivate && privateAvailable
 
-    // Something that looks like what is already in the list waits here for the user's answer.
+    // إذا كان هناك تنزيل مشابه موجود بالفعل في القائمة، ننتظر اختيار المستخدم.
     var duplicateOne by remember { mutableStateOf<DuplicateOne?>(null) }
     var duplicateMany by remember { mutableStateOf<DuplicateMany?>(null) }
 
-    suspend fun addOption(info: YtInfo, option: YtOption, options: List<YtOption>, rememberIt: Boolean) {
-        container.manager.addYoutube(YtPlan.forOption(info.videoId, option), info.title, startNow = false, connections = connections, isPrivate = toPrivate)
-        if (rememberIt) FormatSelector.qualityFor(option, options)?.let { container.settings.setYoutubeQuality(it) }
-        onDone("Added: " + FormatSelector.fileName(info.title, option))
+    suspend fun addOption(
+        info: YtInfo,
+        option: YtOption,
+        options: List<YtOption>,
+        rememberIt: Boolean
+    ) {
+        container.manager.addYoutube(
+            YtPlan.forOption(info.videoId, option),
+            info.title,
+            startNow = false,
+            connections = connections,
+            isPrivate = toPrivate
+        )
+
+        if (rememberIt) {
+            FormatSelector.qualityFor(option, options)
+                ?.let { container.settings.setYoutubeQuality(it) }
+        }
+
+        onDone("تمت الإضافة: " + FormatSelector.fileName(info.title, option))
     }
 
-    /** [addOption], unless the same video in the same quality is already there. */
-    suspend fun addOptionChecked(info: YtInfo, option: YtOption, options: List<YtOption>, rememberIt: Boolean) {
-        val candidate = container.manager.youtubeCandidate(YtPlan.forOption(info.videoId, option), info.title, toPrivate)
+    /** إضافة الصيغة عبر [addOption]، ما لم يكن الفيديو نفسه وبالجودة نفسها موجوداً بالفعل. */
+    suspend fun addOptionChecked(
+        info: YtInfo,
+        option: YtOption,
+        options: List<YtOption>,
+        rememberIt: Boolean
+    ) {
+        val candidate = container.manager.youtubeCandidate(
+            YtPlan.forOption(info.videoId, option),
+            info.title,
+            toPrivate
+        )
+
         val match = container.manager.findDuplicate(candidate)
+
         if (match == null) {
             addOption(info, option, options, rememberIt)
         } else {
@@ -135,42 +181,72 @@ fun YoutubeSheet(
     suspend fun addPlaylist(items: List<YtPlaylistItem>, skipped: Int) {
         for (item in items) {
             container.manager.addYoutube(
-                YtPlan.deferred(item.videoId, playlistQuality), item.title, startNow = false,
-                connections = connections, isPrivate = toPrivate,
+                YtPlan.deferred(item.videoId, playlistQuality),
+                item.title,
+                startNow = false,
+                connections = connections,
+                isPrivate = toPrivate,
             )
         }
+
         onDone(
             when {
-                items.isEmpty() -> "Nothing added: all $skipped videos are already in your list"
-                skipped > 0 -> "Added ${items.size} videos from the playlist, skipped $skipped already in your list"
-                else -> "Added ${items.size} videos from the playlist"
+                items.isEmpty() ->
+                    "لم تتم إضافة أي فيديو: جميع الفيديوهات الـ $skipped موجودة بالفعل في قائمتك"
+
+                skipped > 0 ->
+                    "تمت إضافة ${items.size} فيديو من قائمة التشغيل، وتجاوز $skipped فيديوهات موجودة مسبقاً"
+
+                else ->
+                    "تمت إضافة ${items.size} فيديو من قائمة التشغيل"
             },
         )
     }
 
     LaunchedEffect(target) {
         state = YtState.Loading
+
         try {
             when (val t = target) {
                 is YoutubeLink.Video -> {
                     val info = container.youtube.resolve(t.id)
+
                     if (info.live) {
-                        state = YtState.Failed(com.olaph.xdm.youtube.YtErrorKind.LIVE.message)
+                        state = YtState.Failed(
+                            com.olaph.xdm.youtube.YtErrorKind.LIVE.message
+                        )
                         return@LaunchedEffect
                     }
+
                     val options = FormatSelector.options(info)
+
                     if (options.isEmpty()) {
-                        state = YtState.Failed("YouTube didn't offer any format XDM can download for this video.")
+                        state = YtState.Failed(
+                            "لم يوفر YouTube أي صيغة يمكن لتطبيق XDM تنزيلها لهذا الفيديو."
+                        )
                         return@LaunchedEffect
                     }
-                    val picked = if (defaultQuality == YoutubeQuality.ASK) null else FormatSelector.pick(info, defaultQuality, options)
+
+                    val picked =
+                        if (defaultQuality == YoutubeQuality.ASK) {
+                            null
+                        } else {
+                            FormatSelector.pick(info, defaultQuality, options)
+                        }
+
                     if (picked != null) {
                         addOptionChecked(info, picked, options, rememberIt = false)
                     } else {
-                        state = YtState.Video(info, options, t.listId?.takeIf { YoutubeUrls.isRealPlaylist(it) })
+                        state = YtState.Video(
+                            info,
+                            options,
+                            t.listId?.takeIf { YoutubeUrls.isRealPlaylist(it) }
+                        )
                     }
                 }
-                is YoutubeLink.Playlist -> state = YtState.Playlist(container.youtube.playlist(t.id))
+
+                is YoutubeLink.Playlist ->
+                    state = YtState.Playlist(container.youtube.playlist(t.id))
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -185,35 +261,57 @@ fun YoutubeSheet(
             onResume = {
                 duplicateOne = null
                 container.manager.resume(d.match.existing.id)
-                onDone("Resuming ${d.match.existing.fileName}")
+                onDone("استئناف التنزيل: ${d.match.existing.fileName}")
             },
-            onOpen = { duplicateOne = null; onOpenExisting(d.match.existing.id); onDismiss() },
+            onOpen = {
+                duplicateOne = null
+                onOpenExisting(d.match.existing.id)
+                onDismiss()
+            },
             onAddAgain = {
                 duplicateOne = null
                 busy = true
-                scope.launch { addOption(d.info, d.option, d.options, d.rememberIt) }
+                scope.launch {
+                    addOption(d.info, d.option, d.options, d.rememberIt)
+                }
             },
-            onCancel = { duplicateOne = null; onDismiss() },
+            onCancel = {
+                duplicateOne = null
+                onDismiss()
+            },
         )
     }
+
     duplicateMany?.let { d ->
         BatchDuplicateDialog(
             check = d.check,
             onSkip = {
                 duplicateMany = null
                 busy = true
-                scope.launch { addPlaylist(d.check.withoutDuplicates(), skipped = d.check.duplicates) }
+                scope.launch {
+                    addPlaylist(
+                        d.check.withoutDuplicates(),
+                        skipped = d.check.duplicates
+                    )
+                }
             },
             onAddAll = {
                 duplicateMany = null
                 busy = true
-                scope.launch { addPlaylist(d.check.items, skipped = 0) }
+                scope.launch {
+                    addPlaylist(d.check.items, skipped = 0)
+                }
             },
-            onCancel = { duplicateMany = null },
+            onCancel = {
+                duplicateMany = null
+            },
         )
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -223,24 +321,48 @@ fun YoutubeSheet(
         ) {
             when (val s = state) {
                 YtState.Loading -> {
-                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                    Row(
+                        Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            Modifier.size(22.dp),
+                            strokeWidth = 2.dp
+                        )
+
                         Spacer(Modifier.width(14.dp))
+
                         Text(
-                            if (target is YoutubeLink.Playlist) "Reading playlist…" else "Getting video info…",
+                            if (target is YoutubeLink.Playlist)
+                                "جارٍ قراءة قائمة التشغيل..."
+                            else
+                                "جارٍ جلب معلومات الفيديو...",
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
                 }
+
                 is YtState.Failed -> {
-                    Text("Can't download this", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 20.dp))
+                    Text(
+                        "تعذّر تنزيل هذا المحتوى",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+
                     Text(
                         s.message,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                     )
-                    TextButton(onClick = onDismiss, modifier = Modifier.padding(horizontal = 12.dp)) { Text("Close") }
+
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    ) {
+                        Text("إغلاق")
+                    }
                 }
+
                 is YtState.Video -> VideoChoices(
                     container = container,
                     info = s.info,
@@ -249,30 +371,60 @@ fun YoutubeSheet(
                     defaultQuality = defaultQuality,
                     remember = rememberChoice,
                     onRemember = { rememberChoice = it },
-                    privateCheckbox = { PrivateCheckbox(toPrivate, privateAvailable, { savePrivate = it }, Modifier.padding(horizontal = 12.dp)) },
+                    privateCheckbox = {
+                        PrivateCheckbox(
+                            toPrivate,
+                            privateAvailable,
+                            { savePrivate = it },
+                            Modifier.padding(horizontal = 12.dp)
+                        )
+                    },
                     busy = busy,
                     onPlaylist = { target = YoutubeLink.Playlist(it) },
                     onPick = { option ->
                         if (!busy) {
                             busy = true
-                            scope.launch { addOptionChecked(s.info, option, s.options, rememberChoice) }
+                            scope.launch {
+                                addOptionChecked(
+                                    s.info,
+                                    option,
+                                    s.options,
+                                    rememberChoice
+                                )
+                            }
                         }
                     },
                 )
+
                 is YtState.Playlist -> PlaylistChoices(
                     list = s.list,
                     quality = playlistQuality,
                     onQuality = { playlistQuality = it },
-                    privateCheckbox = { PrivateCheckbox(toPrivate, privateAvailable, { savePrivate = it }, Modifier.padding(horizontal = 12.dp)) },
+                    privateCheckbox = {
+                        PrivateCheckbox(
+                            toPrivate,
+                            privateAvailable,
+                            { savePrivate = it },
+                            Modifier.padding(horizontal = 12.dp)
+                        )
+                    },
                     busy = busy,
                     onDownloadAll = {
                         if (!busy) {
                             busy = true
                             scope.launch {
                                 val matches = container.manager.findDuplicates(
-                                    s.list.items.map { container.manager.youtubeCandidate(YtPlan.deferred(it.videoId, playlistQuality), it.title, toPrivate) },
+                                    s.list.items.map {
+                                        container.manager.youtubeCandidate(
+                                            YtPlan.deferred(it.videoId, playlistQuality),
+                                            it.title,
+                                            toPrivate
+                                        )
+                                    },
                                 )
+
                                 val check = BatchCheck(s.list.items, matches)
+
                                 if (check.duplicates == 0) {
                                     addPlaylist(s.list.items, skipped = 0)
                                 } else {
@@ -302,13 +454,26 @@ private fun VideoChoices(
     onPlaylist: (String) -> Unit,
     onPick: (YtOption) -> Unit,
 ) {
-    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier.padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Thumbnail(container, info.thumbnailUrl)
+
         Spacer(Modifier.width(14.dp))
+
         Column(Modifier.weight(1f)) {
-            Text(info.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Text(
-                listOf(info.channel, durationText(info.durationSeconds)).filter { it.isNotBlank() }.joinToString(" · "),
+                info.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                listOf(info.channel, durationText(info.durationSeconds))
+                    .filter { it.isNotBlank() }
+                    .joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -316,44 +481,62 @@ private fun VideoChoices(
             )
         }
     }
+
     Spacer(Modifier.height(8.dp))
-    // Above the formats: picking a format adds the download right away.
+
+    // قبل عرض الصيغ: اختيار أي صيغة يضيف التنزيل مباشرة.
     privateCheckbox()
 
     val video = options.filter { it.kind == OptionKind.VIDEO }
     val progressive = options.filter { it.kind == OptionKind.PROGRESSIVE }
     val audio = options.filter { it.kind == OptionKind.AUDIO }
+
     if (video.isNotEmpty()) {
-        SectionTitle("Video (MP4)")
+        SectionTitle("فيديو (MP4)")
         video.forEach { OptionRow(it, enabled = !busy, onPick) }
     }
+
     if (progressive.isNotEmpty()) {
-        SectionTitle("Fast")
+        SectionTitle("تنزيل سريع")
         progressive.forEach { OptionRow(it, enabled = !busy, onPick) }
     }
+
     if (audio.isNotEmpty()) {
-        SectionTitle("Audio only")
+        SectionTitle("صوت فقط")
         audio.forEach { OptionRow(it, enabled = !busy, onPick) }
     }
 
     HorizontalDivider(Modifier.padding(top = 8.dp))
+
     Row(
-        Modifier.fillMaxWidth().clickable { onRemember(!remember) }.padding(horizontal = 12.dp),
+        Modifier
+            .fillMaxWidth()
+            .clickable { onRemember(!remember) }
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = remember, onCheckedChange = onRemember)
+        Checkbox(
+            checked = remember,
+            onCheckedChange = onRemember
+        )
+
         Column {
-            Text("Remember my choice", style = MaterialTheme.typography.bodyMedium)
+            Text("تذكّر اختياري", style = MaterialTheme.typography.bodyMedium)
+
             Text(
-                "Default now: ${defaultQuality.label}. Change it any time in Settings.",
+                "الجودة الافتراضية حالياً: ${defaultQuality.label}. يمكنك تغييرها في أي وقت من الإعدادات.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
+
     if (playlistId != null) {
-        TextButton(onClick = { onPlaylist(playlistId) }, modifier = Modifier.padding(horizontal = 12.dp)) {
-            Text("This video is part of a playlist — download the whole playlist")
+        TextButton(
+            onClick = { onPlaylist(playlistId) },
+            modifier = Modifier.padding(horizontal = 12.dp)
+        ) {
+            Text("هذا الفيديو ضمن قائمة تشغيل — تنزيل القائمة كاملة")
         }
     }
 }
@@ -368,49 +551,71 @@ private fun PlaylistChoices(
     onDownloadAll: () -> Unit,
 ) {
     Text(
-        list.title.ifBlank { "Playlist" },
+        list.title.ifBlank { "قائمة تشغيل" },
         style = MaterialTheme.typography.titleLarge,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.padding(horizontal = 20.dp),
     )
-    val count = if (list.totalCount >= 0) list.totalCount else list.items.size.toLong()
+
+    val count =
+        if (list.totalCount >= 0) list.totalCount else list.items.size.toLong()
+
     Text(
-        listOf(list.channel, "$count videos").filter { it.isNotBlank() }.joinToString(" · "),
+        listOf(list.channel, "$count فيديو")
+            .filter { it.isNotBlank() }
+            .joinToString(" · "),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
     )
+
     if (list.truncated) {
         Text(
-            "Only the first ${list.items.size} videos are added (the limit per playlist).",
+            "ستتم إضافة أول ${list.items.size} فيديو فقط (هذا هو الحد الأقصى لكل قائمة تشغيل).",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.tertiary,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
         )
     }
-    SectionTitle("Quality for every video")
+
+    SectionTitle("جودة التنزيل لجميع الفيديوهات")
+
     PLAYLIST_QUALITIES.forEach { q ->
         Row(
-            Modifier.fillMaxWidth().clickable { onQuality(q) }.padding(horizontal = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .clickable { onQuality(q) }
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            RadioButton(selected = quality == q, onClick = { onQuality(q) })
+            RadioButton(
+                selected = quality == q,
+                onClick = { onQuality(q) }
+            )
+
             Text(q.label)
         }
     }
+
     Text(
-        "A video that doesn't come in the chosen resolution gets the closest lower one. Each video is its own download.",
+        "إذا لم تتوفر دقة الفيديو المختارة، فسيتم استخدام أقرب دقة أقل منها. يُضاف كل فيديو كتنزيل مستقل.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
     )
+
     privateCheckbox()
+
     Button(
         onClick = onDownloadAll,
         enabled = !busy && list.items.isNotEmpty(),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-    ) { Text("Download all (${list.items.size})") }
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+    ) {
+        Text("تنزيل الكل (${list.items.size})")
+    }
 }
 
 @Composable
@@ -419,52 +624,102 @@ private fun SectionTitle(text: String) {
         text,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 2.dp),
+        modifier = Modifier.padding(
+            start = 20.dp,
+            end = 20.dp,
+            top = 12.dp,
+            bottom = 2.dp
+        ),
     )
 }
 
 @Composable
-private fun OptionRow(option: YtOption, enabled: Boolean, onPick: (YtOption) -> Unit) {
+private fun OptionRow(
+    option: YtOption,
+    enabled: Boolean,
+    onPick: (YtOption) -> Unit
+) {
     Row(
-        Modifier.fillMaxWidth().clickable(enabled = enabled) { onPick(option) }.padding(horizontal = 20.dp, vertical = 10.dp),
+        Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onPick(option) }
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(option.label, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    option.label,
+                    style = MaterialTheme.typography.titleSmall
+                )
+
                 if (option.sizeBytes > 0) {
                     Text(
-                        "  " + (if (option.sizeEstimated) "~" else "") + Formatters.bytes(option.sizeBytes),
+                        "  " + (if (option.sizeEstimated) "~" else "") +
+                            Formatters.bytes(option.sizeBytes),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
+
             if (option.detail.isNotBlank()) {
-                Text(option.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    option.detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
-        Icon(Icons.Filled.Download, null, tint = MaterialTheme.colorScheme.primary)
+
+        Icon(
+            Icons.Filled.Download,
+            null,
+            tint = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
 @Composable
 private fun Thumbnail(container: AppContainer, url: String?) {
-    var bitmap by remember(url) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(url) { bitmap = loadThumbnail(container, url) }
-    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(width = 112.dp, height = 63.dp)) {
+    var bitmap by remember(url) {
+        mutableStateOf<ImageBitmap?>(null)
+    }
+
+    LaunchedEffect(url) {
+        bitmap = loadThumbnail(container, url)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.size(width = 112.dp, height = 63.dp)
+    ) {
         bitmap?.let {
-            Image(it, null, Modifier.clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+            Image(
+                it,
+                null,
+                Modifier.clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
         } ?: Box(Modifier)
     }
 }
 
-private suspend fun loadThumbnail(container: AppContainer, url: String?): ImageBitmap? {
+private suspend fun loadThumbnail(
+    container: AppContainer,
+    url: String?
+): ImageBitmap? {
     if (url == null) return null
+
     return withContext(Dispatchers.IO) {
         runCatching {
-            container.httpClient.newCall(Request.Builder().url(url).build()).execute().use { r ->
-                r.body?.bytes()?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+            container.httpClient.newCall(
+                Request.Builder().url(url).build()
+            ).execute().use { r ->
+                r.body?.bytes()?.let {
+                    BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap()
+                }
             }
         }.getOrNull()
     }
@@ -472,8 +727,14 @@ private suspend fun loadThumbnail(container: AppContainer, url: String?): ImageB
 
 private fun durationText(seconds: Long): String {
     if (seconds <= 0) return ""
+
     val h = seconds / 3600
     val m = seconds % 3600 / 60
     val s = seconds % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+
+    return if (h > 0) {
+        "%d:%02d:%02d".format(h, m, s)
+    } else {
+        "%d:%02d".format(m, s)
+    }
 }

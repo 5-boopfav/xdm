@@ -776,19 +776,19 @@ fun effectiveConnections(d: DownloadEntity): Int =
 fun limitsLine(settings: AppSettings, queue: QueueStatus): String? {
     val parts = buildList {
         if (settings.speedLimitBytesPerSec > 0) {
-            add("حد السرعة ${Formatters.speed(settings.speedLimitBytesPerSec)}")
+            add("Speed limit ${Formatters.speed(settings.speedLimitBytesPerSec)}")
         }
 
         if (settings.scheduleEnabled) {
             when {
                 queue.hold == Hold.SCHEDULE ->
-                    add("مجدول: يبدأ عند ${queue.startsAt ?: RunGate.clock(settings.scheduleStartMinute)}")
+                    add("Scheduled: starts at ${queue.startsAt ?: RunGate.clock(settings.scheduleStartMinute)}")
 
                 settings.scheduleStartMinute != settings.scheduleEndMinute ->
-                    add("الجدولة ${RunGate.clock(settings.scheduleStartMinute)}–${RunGate.clock(settings.scheduleEndMinute)}")
+                    add("Schedule ${RunGate.clock(settings.scheduleStartMinute)}–${RunGate.clock(settings.scheduleEndMinute)}")
 
                 settings.scheduleOnlyCharging ->
-                    add("أثناء الشحن فقط")
+                    add("Only while charging")
             }
         }
     }
@@ -827,14 +827,14 @@ fun statusLine(item: DownloadItem, queue: QueueStatus): String {
     val conn = effectiveConnections(d)
 
     val connText = when {
-        d.isHls -> if (conn == 1) "مقطع واحد في كل مرة" else "$conn مقاطع بالتوازي"
-        conn == 1 -> "اتصال واحد"
-        else -> "$conn اتصالات"
+        d.isHls -> if (conn == 1) "one segment at a time" else "$conn segments in parallel"
+        conn == 1 -> "1 connection"
+        else -> "$conn connections"
     }
 
     val resumeNote =
         if (d.notResumable && d.status != DownloadStatus.COMPLETED)
-            " · لا يمكن استئنافه"
+            " · Cannot resume"
         else
             ""
 
@@ -849,14 +849,14 @@ fun statusLine(item: DownloadItem, queue: QueueStatus): String {
             }
 
             buildString {
-                append(live?.statusText ?: "جارٍ التنزيل")
+                append(live?.statusText ?: "Downloading")
 
                 if (speed > 0) {
                     append(" · ").append(Formatters.speed(speed))
                 }
 
                 if (live != null && live.etaSeconds >= 0) {
-                    append(" · الوقت المتبقي ").append(Formatters.eta(live.etaSeconds))
+                    append(" · Time remaining ").append(Formatters.eta(live.etaSeconds))
                 }
 
                 append(" · ").append(connText).append(resumeNote)
@@ -864,25 +864,25 @@ fun statusLine(item: DownloadItem, queue: QueueStatus): String {
         }
 
         DownloadStatus.QUEUED -> when (queue.hold) {
-            Hold.WIFI -> "بانتظار شبكة Wi-Fi"
-            Hold.SCHEDULE -> "مجدول" + (queue.startsAt?.let { " · يبدأ عند $it" } ?: "")
-            Hold.CHARGING -> "بانتظار الشاحن"
-            null -> "في قائمة الانتظار"
+            Hold.WIFI -> "Waiting for Wi-Fi"
+            Hold.SCHEDULE -> "Scheduled" + (queue.startsAt?.let { " · starts at $it" } ?: "")
+            Hold.CHARGING -> "Waiting for the charger"
+            null -> "Queued"
         } + resumeNote
 
         // الإيقاف اليدوي لا يعرض سببًا، أما حد الوقت في النظام فيعرض سببه.
         DownloadStatus.PAUSED ->
-            (d.error ?: "متوقف مؤقتًا") + resumeNote
+            (d.error ?: "Paused") + resumeNote
 
         DownloadStatus.COMPLETED ->
-            "مكتمل" +
+            "Completed" +
                 (d.completedAt?.let { " · ${Formatters.dateTime(it)}" } ?: "") +
                 (d.error?.let { "\n$it" } ?: "")
 
         DownloadStatus.FAILED ->
-            "فشل" + (d.error?.let { ": $it" } ?: "")
+            "Failed" + (d.error?.let { ": $it" } ?: "")
 
         DownloadStatus.CANCELLED ->
-            "أُلغي"
+            "Cancelled"
     }
 }

@@ -45,14 +45,23 @@ import com.olaph.xdm.engine.FileCategory
 import com.olaph.xdm.service.ScheduleAlarm
 
 @Composable
-private fun SwitchRow(title: String, description: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit
+) {
     Row(
         Modifier.fillMaxWidth().clickable { onChange(!checked) }.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         Switch(checked = checked, onCheckedChange = onChange)
     }
@@ -60,169 +69,336 @@ private fun SwitchRow(title: String, description: String, checked: Boolean, onCh
 
 @Composable
 private fun InfoText(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-}
-
-/** The system folder picker, asked for access that survives a restart. */
-private class PickFolder : ActivityResultContracts.OpenDocumentTree() {
-    override fun createIntent(context: Context, input: Uri?): Intent = super.createIntent(context, input).addFlags(
-        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION,
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
-/** "Save location": Download/XDM or a folder of the user's choice (SD card, any storage provider), optionally sorted by type. */
+/** أداة اختيار مجلد النظام مع طلب صلاحية دائمة تستمر بعد إعادة تشغيل الجهاز. */
+private class PickFolder : ActivityResultContracts.OpenDocumentTree() {
+    override fun createIntent(context: Context, input: Uri?): Intent =
+        super.createIntent(context, input).addFlags(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PREFIX_URI_PERMISSION,
+        )
+}
+
+/** موقع حفظ الملفات: مجلد التنزيلات أو مجلد يختاره المستخدم. */
 @Composable
 fun SaveLocationSettings(vm: MainViewModel, settings: AppSettings) {
     val folder by vm.saveFolder.collectAsStateWithLifecycle()
-    val picker = rememberLauncherForActivityResult(PickFolder()) { uri -> if (uri != null) vm.chooseSaveFolder(uri) }
-    LaunchedEffect(Unit) { vm.refreshSaveFolder() }
 
-    Text("Save location", style = MaterialTheme.typography.titleMedium)
+    val picker = rememberLauncherForActivityResult(PickFolder()) { uri ->
+        if (uri != null) vm.chooseSaveFolder(uri)
+    }
+
+    LaunchedEffect(Unit) {
+        vm.refreshSaveFolder()
+    }
+
+    Text("موقع حفظ الملفات", style = MaterialTheme.typography.titleMedium)
+
     Column(Modifier.padding(vertical = 8.dp)) {
-        Text(folder?.label ?: "Download/XDM", style = MaterialTheme.typography.titleSmall)
+        Text(
+            folder?.label ?: "Download/XDM",
+            style = MaterialTheme.typography.titleSmall
+        )
+
         InfoText(
             when {
-                folder == null -> "The public Download/XDM folder, visible to the gallery and other apps"
+                folder == null ->
+                    "مجلد Download/XDM العام، ويمكن الوصول إليه من معرض الصور والتطبيقات الأخرى."
+
                 folder?.available == false ->
-                    "Not available right now (folder deleted, card removed or access revoked). Finished files go to Download/XDM until you choose another folder."
-                else -> "Folder you chose. Finished files are saved here."
-            },
+                    "المجلد غير متاح حالياً (ربما حُذف أو أُزيلت بطاقة الذاكرة أو أُلغيت صلاحية الوصول). سيتم حفظ الملفات المكتملة في Download/XDM حتى تختار مجلداً آخر."
+
+                else ->
+                    "المجلد الذي اخترته. سيتم حفظ الملفات المكتملة هنا."
+            }
         )
     }
+
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextButton(onClick = { picker.launch(null) }) { Text("Choose folder…") }
-        TextButton(onClick = vm::resetSaveFolder, enabled = settings.saveTreeUri != null) { Text("Reset to Download/XDM") }
+        TextButton(onClick = { picker.launch(null) }) {
+            Text("اختيار مجلد...")
+        }
+
+        TextButton(
+            onClick = vm::resetSaveFolder,
+            enabled = settings.saveTreeUri != null
+        ) {
+            Text("استعادة Download/XDM الافتراضي")
+        }
     }
+
     SwitchRow(
-        "Sort into subfolders by type",
+        "ترتيب الملفات في مجلدات فرعية حسب النوع",
         FileCategory.entries.joinToString(", ") { it.folder },
         settings.sortByType,
         vm::setSortByType,
     )
 }
 
-/** "Schedule": a daily window, optionally only on the charger. */
+/** جدولة التنزيلات: تحديد فترة يومية، مع إمكانية اشتراط توصيل الشاحن. */
 @Composable
 fun ScheduleSettings(vm: MainViewModel, settings: AppSettings) {
     val context = LocalContext.current
-    var exactAllowed by remember { mutableStateOf(ScheduleAlarm.canScheduleExact(context)) }
+
+    var exactAllowed by remember {
+        mutableStateOf(ScheduleAlarm.canScheduleExact(context))
+    }
+
     LifecycleResumeEffect(Unit) {
         exactAllowed = ScheduleAlarm.canScheduleExact(context)
         onPauseOrDispose {}
     }
 
-    Text("Schedule", style = MaterialTheme.typography.titleMedium)
+    Text("جدولة التنزيلات", style = MaterialTheme.typography.titleMedium)
+
     SwitchRow(
-        "Download only in a daily window",
-        "Outside it, queued downloads wait (shown as Scheduled) and running ones go back to the queue. \"Start now\" on a download ignores the schedule.",
+        "التنزيل خلال فترة زمنية يومية فقط",
+        "خارج الفترة المحددة، تنتظر التنزيلات الموجودة في قائمة الانتظار، وتعود التنزيلات الجارية إلى قائمة الانتظار. خيار «ابدأ الآن» يتجاوز الجدولة.",
         settings.scheduleEnabled,
         vm::setScheduleEnabled,
     )
+
     if (!settings.scheduleEnabled) return
-    TimeRow("From", settings.scheduleStartMinute) { vm.setScheduleWindow(it, settings.scheduleEndMinute) }
-    TimeRow("Until", settings.scheduleEndMinute) { vm.setScheduleWindow(settings.scheduleStartMinute, it) }
-    if (settings.scheduleStartMinute == settings.scheduleEndMinute) InfoText("From and until are the same time, so the window is always open.")
-    SwitchRow("Only while charging", "Downloads wait for the charger, also inside the window", settings.scheduleOnlyCharging, vm::setScheduleOnlyCharging)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && settings.scheduleStartMinute != settings.scheduleEndMinute) {
-        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+
+    TimeRow("من", settings.scheduleStartMinute) {
+        vm.setScheduleWindow(it, settings.scheduleEndMinute)
+    }
+
+    TimeRow("إلى", settings.scheduleEndMinute) {
+        vm.setScheduleWindow(settings.scheduleStartMinute, it)
+    }
+
+    if (settings.scheduleStartMinute == settings.scheduleEndMinute) {
+        InfoText("وقت البداية والنهاية متطابق، لذلك تكون فترة التنزيل مفتوحة طوال الوقت.")
+    }
+
+    SwitchRow(
+        "التنزيل أثناء الشحن فقط",
+        "تنتظر التنزيلات توصيل الشاحن، حتى أثناء الفترة المحددة.",
+        settings.scheduleOnlyCharging,
+        vm::setScheduleOnlyCharging
+    )
+
+    if (
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        settings.scheduleStartMinute != settings.scheduleEndMinute
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Column(Modifier.weight(1f)) {
-                Text("Start on time", style = MaterialTheme.typography.titleSmall)
+                Text("البدء في الوقت المحدد", style = MaterialTheme.typography.titleSmall)
+
                 InfoText(
-                    if (exactAllowed) "Android lets XDM wake up exactly when the window opens"
-                    else "Without the \"Alarms & reminders\" access Android may refuse to start the downloads in the background; XDM then posts a \"Scheduled downloads are ready\" notification to tap.",
+                    if (exactAllowed)
+                        "يسمح أندرويد لتطبيق XDM بالتنبيه بدقة عند بدء فترة التنزيل."
+                    else
+                        "من دون صلاحية «المنبهات والتذكيرات»، قد يمنع أندرويد بدء التنزيلات في الخلفية. عندها يعرض XDM إشعاراً بعنوان «التنزيلات المجدولة جاهزة» لتضغط عليه وتبدأ التنزيلات."
                 )
             }
-            if (!exactAllowed) TextButton(onClick = { if (!BackgroundHelp.openExactAlarmSettings(context)) cantOpen(context) }) { Text("Allow") }
+
+            if (!exactAllowed) {
+                TextButton(
+                    onClick = {
+                        if (!BackgroundHelp.openExactAlarmSettings(context)) {
+                            cantOpen(context)
+                        }
+                    }
+                ) {
+                    Text("السماح")
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun TimeRow(label: String, minuteOfDay: Int, onPicked: (Int) -> Unit) {
+private fun TimeRow(
+    label: String,
+    minuteOfDay: Int,
+    onPicked: (Int) -> Unit
+) {
     val context = LocalContext.current
+
     Row(
         Modifier.fillMaxWidth().clickable {
             TimePickerDialog(
-                context, { _, h, m -> onPicked(h * 60 + m) }, minuteOfDay / 60, minuteOfDay % 60, DateFormat.is24HourFormat(context),
+                context,
+                { _, h, m -> onPicked(h * 60 + m) },
+                minuteOfDay / 60,
+                minuteOfDay % 60,
+                DateFormat.is24HourFormat(context),
             ).show()
         }.padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-        Text(RunGate.clock(minuteOfDay), style = MaterialTheme.typography.titleMedium)
+        Text(
+            label,
+            Modifier.weight(1f),
+            style = MaterialTheme.typography.titleSmall
+        )
+
+        Text(
+            RunGate.clock(minuteOfDay),
+            style = MaterialTheme.typography.titleMedium
+        )
     }
 }
 
-/** "Speed limit": one cap for everything XDM downloads, Off by default. */
+/** تحديد سرعة التنزيل لجميع الملفات، والإعداد الافتراضي هو عدم وجود حد للسرعة. */
 @Composable
 fun SpeedLimitSettings(vm: MainViewModel, settings: AppSettings) {
     val limit = settings.speedLimitBytesPerSec
-    val (shownText, shownMegabytes) = if (limit > 0) SpeedLimitInput.display(limit) else ("" to true)
+
+    val (shownText, shownMegabytes) =
+        if (limit > 0) SpeedLimitInput.display(limit) else ("" to true)
+
     var text by remember(limit) { mutableStateOf(shownText) }
     var megabytes by remember(limit) { mutableStateOf(shownMegabytes) }
+
     val parsed = SpeedLimitInput.parse(text, megabytes)
 
-    Text("Speed limit", style = MaterialTheme.typography.titleMedium)
+    Text("حد سرعة التنزيل", style = MaterialTheme.typography.titleMedium)
+
     Column(Modifier.padding(top = 8.dp)) {
-        Text(if (limit > 0) "Limited to ${Formatters.speed(limit)}" else "Off", style = MaterialTheme.typography.titleSmall)
-        InfoText("Applies to all downloads together and takes effect at once, also for downloads that are running.")
+        Text(
+            if (limit > 0)
+                "السرعة المحددة: ${Formatters.speed(limit)}"
+            else
+                "غير محدودة",
+            style = MaterialTheme.typography.titleSmall
+        )
+
+        InfoText(
+            "يُطبق الحد على جميع التنزيلات مجتمعة، ويسري فوراً حتى على التنزيلات الجارية."
+        )
     }
-    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+    Row(
+        Modifier.padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
-            label = { Text("Limit") },
+            label = { Text("الحد الأقصى للسرعة") },
             singleLine = true,
             isError = text.isNotBlank() && parsed == null,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal
+            ),
             modifier = Modifier.weight(1f),
         )
-        FilterChip(selected = !megabytes, onClick = { megabytes = false }, label = { Text("KB/s") })
-        FilterChip(selected = megabytes, onClick = { megabytes = true }, label = { Text("MB/s") })
+
+        FilterChip(
+            selected = !megabytes,
+            onClick = { megabytes = false },
+            label = { Text("KB/s") }
+        )
+
+        FilterChip(
+            selected = megabytes,
+            onClick = { megabytes = true },
+            label = { Text("MB/s") }
+        )
     }
+
     Row {
-        TextButton(onClick = { parsed?.let(vm::setSpeedLimit) }, enabled = parsed != null && parsed != limit) { Text("Set limit") }
-        TextButton(onClick = { vm.setSpeedLimit(0) }, enabled = limit > 0) { Text("Off") }
+        TextButton(
+            onClick = { parsed?.let(vm::setSpeedLimit) },
+            enabled = parsed != null && parsed != limit
+        ) {
+            Text("تطبيق الحد")
+        }
+
+        TextButton(
+            onClick = { vm.setSpeedLimit(0) },
+            enabled = limit > 0
+        ) {
+            Text("إلغاء الحد")
+        }
     }
 }
 
-/** "Background": what keeps downloads alive when the phone wants to save battery. */
+/** إعدادات عمل التطبيق في الخلفية وإرشادات توفير البطارية. */
 @Composable
 fun BackgroundSettings() {
     val context = LocalContext.current
-    var exempt by remember { mutableStateOf(BackgroundHelp.isExempt(context)) }
+
+    var exempt by remember {
+        mutableStateOf(BackgroundHelp.isExempt(context))
+    }
+
     LifecycleResumeEffect(Unit) {
         exempt = BackgroundHelp.isExempt(context)
         onPauseOrDispose {}
     }
-    val xiaomi = remember { BatteryAdvice.isXiaomiFamily(Build.MANUFACTURER, Build.BRAND) }
 
-    Text("Background", style = MaterialTheme.typography.titleMedium)
-    Column(Modifier.fillMaxWidth().clickable {
-        if (BackgroundHelp.openBatterySettings(context) == BackgroundHelp.Opened.NOTHING) cantOpen(context)
-    }.padding(vertical = 8.dp)) {
-        Text("Battery optimisation", style = MaterialTheme.typography.titleSmall)
+    val xiaomi = remember {
+        BatteryAdvice.isXiaomiFamily(Build.MANUFACTURER, Build.BRAND)
+    }
+
+    Text("إعدادات الخلفية", style = MaterialTheme.typography.titleMedium)
+
+    Column(
+        Modifier.fillMaxWidth().clickable {
+            if (
+                BackgroundHelp.openBatterySettings(context) ==
+                BackgroundHelp.Opened.NOTHING
+            ) {
+                cantOpen(context)
+            }
+        }.padding(vertical = 8.dp)
+    ) {
+        Text("تحسين استهلاك البطارية", style = MaterialTheme.typography.titleSmall)
+
         InfoText(
-            if (exempt) "XDM is not restricted. Tap to see the list."
-            else "XDM may be stopped in the background to save battery. Tap to allow it to keep downloading.",
+            if (exempt)
+                "تطبيق XDM غير مقيّد حالياً. اضغط لعرض القائمة."
+            else
+                "قد يوقف النظام تطبيق XDM في الخلفية لتوفير البطارية. اضغط للسماح له بمواصلة التنزيل."
         )
     }
-    Column(Modifier.fillMaxWidth().clickable {
-        if (BackgroundHelp.openBackgroundTips(context) == BackgroundHelp.Opened.NOTHING) cantOpen(context)
-    }.padding(vertical = 8.dp)) {
-        Text("Background tips", style = MaterialTheme.typography.titleSmall)
+
+    Column(
+        Modifier.fillMaxWidth().clickable {
+            if (
+                BackgroundHelp.openBackgroundTips(context) ==
+                BackgroundHelp.Opened.NOTHING
+            ) {
+                cantOpen(context)
+            }
+        }.padding(vertical = 8.dp)
+    ) {
+        Text("إرشادات تشغيل التطبيق في الخلفية", style = MaterialTheme.typography.titleSmall)
+
         InfoText(
-            if (xiaomi) "Opens the Autostart list: switch XDM on there, or MIUI / HyperOS may stop it when the screen is off."
-            else "Opens XDM's app info, where you can check battery and background settings.",
+            if (xiaomi)
+                "يفتح قائمة التشغيل التلقائي. فعّل تطبيق XDM هناك، وإلا فقد يوقفه نظام MIUI أو HyperOS عند إطفاء الشاشة."
+            else
+                "يفتح معلومات تطبيق XDM، حيث يمكنك مراجعة إعدادات البطارية والتشغيل في الخلفية."
         )
     }
+
     InfoText(
-        "Android 15 also limits download services that run in the background to about 6 hours in 24. XDM then pauses " +
-            "the downloads and offers to continue; opening the app starts the clock over.",
+        "يقيّد أندرويد 15 أيضاً خدمات التنزيل التي تعمل في الخلفية إلى نحو 6 ساعات خلال 24 ساعة. بعد ذلك يوقف XDM التنزيلات مؤقتاً ويتيح لك متابعتها. فتح التطبيق يعيد بدء احتساب المدة."
     )
 }
 
 private fun cantOpen(context: Context) {
-    Toast.makeText(context, "This phone has no screen for that", Toast.LENGTH_SHORT).show()
+    Toast.makeText(
+        context,
+        "لا توجد شاشة إعدادات متاحة لهذا الخيار في هذا الهاتف.",
+        Toast.LENGTH_SHORT
+    ).show()
 }

@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  # CI only checks the code (tests, build, lint, emulator smoke). It publishes no APKs.
+  # CI checks code, builds APK, runs tests and lint.
   build:
     runs-on: ubuntu-latest
     steps:
@@ -26,6 +26,14 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew testDebugUnitTest assembleDebug -Dorg.gradle.workers.max=4 --stacktrace 2>&1 | tee gradle-ci.log
+
+      # Upload APK for Android phone installation
+      - name: Upload Bahmad APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bahmad-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
 
       - name: Publish failure logs to ci-logs branch
         if: failure() && github.event_name == 'push'
@@ -75,7 +83,6 @@ jobs:
           git add -A && git commit -q -m "CI lint logs for $GITHUB_SHA"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-logs
 
-  # One status tag for the whole run (tests, APK and lint), read by the release scripts.
   status:
     needs: [build, lint]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -90,8 +97,6 @@ jobs:
           git push -f origin "refs/tags/ci-$st"
 
   smoke:
-    # Boots an emulator, opens the app, taps through it and screenshots it.
-    # Builds its own APK so no APK leaves the runner. A flaky emulator never blocks the build job.
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30

@@ -32,20 +32,20 @@ object DeleteScope {
 
     /** رسالة توضح عدد التنزيلات المحذوفة والمساحة المستعادة، وعدد الملفات التي تعذر حذفها. */
     fun message(removed: Int, freedBytes: Long, failed: Int): String = buildString {
-        append("تم حذف ")
+        append("Deleted ")
             .append(removed)
-            .append(if (removed == 1) " تنزيل" else " تنزيلات")
+            .append(if (removed == 1) " download" else " downloads")
 
         if (freedBytes > 0) {
-            append(" (تم توفير ")
+            append(" (")
                 .append(Formatters.bytes(freedBytes))
-                .append(")")
+                .append(" freed)")
         }
 
         if (failed > 0) {
-            append(" · تعذر حذف ")
+            append(" · ")
                 .append(failed)
-                .append(if (failed == 1) " ملف" else " ملفات")
+                .append(if (failed == 1) " file could not be deleted" else " files could not be deleted")
         }
     }
 

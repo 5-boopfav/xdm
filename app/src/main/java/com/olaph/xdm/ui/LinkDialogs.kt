@@ -34,7 +34,7 @@ import com.olaph.xdm.data.DownloadEntity
 import com.olaph.xdm.engine.LinkMatch
 import com.olaph.xdm.engine.UrlUtils
 
-/** "Change URL…": paste a new link for a download that has not finished. */
+/** «تغيير الرابط»: لصق رابط جديد لتنزيل لم يكتمل بعد. */
 @Composable
 fun ChangeUrlDialog(download: DownloadEntity, onDismiss: () -> Unit, onCheck: (String) -> Unit) {
     val context = LocalContext.current
@@ -43,12 +43,12 @@ fun ChangeUrlDialog(download: DownloadEntity, onDismiss: () -> Unit, onCheck: (S
     val valid = UrlUtils.isHttpUrl(trimmed)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Change URL") },
+        title = { Text("تغيير الرابط") },
         text = {
             Column {
                 Text(download.fileName, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
                 Text(
-                    "The new link must lead to the same file. XDM checks its size first and keeps what is already downloaded.",
+                    "يجب أن يؤدي الرابط الجديد إلى الملف نفسه. سيتحقق بحمد IDM من حجم الملف أولاً، وسيحتفظ بالجزء الذي تم تنزيله بالفعل.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp),
@@ -56,7 +56,7 @@ fun ChangeUrlDialog(download: DownloadEntity, onDismiss: () -> Unit, onCheck: (S
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("New link") },
+                    label = { Text("الرابط الجديد") },
                     maxLines = 3,
                     isError = url.isNotBlank() && !valid,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
@@ -65,28 +65,28 @@ fun ChangeUrlDialog(download: DownloadEntity, onDismiss: () -> Unit, onCheck: (S
                             val clip = context.getSystemService(ClipboardManager::class.java).primaryClip
                             val text = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
                             url = UrlUtils.extractFirstUrl(text) ?: text.trim()
-                        }) { Icon(Icons.Filled.ContentPaste, "Paste") }
+                        }) { Icon(Icons.Filled.ContentPaste, "لصق") }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onCheck(trimmed) }, enabled = valid) { Text("Check link") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onCheck(trimmed) }, enabled = valid) { Text("التحقق من الرابط") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } },
     )
 }
 
-/** The answer to a replacement link: use it, start over with it, or why not. */
+/** نتيجة فحص الرابط البديل: استخدامه، أو بدء التنزيل من جديد، أو توضيح سبب عدم صلاحيته. */
 @Composable
 fun ReplacementDialog(offer: ReplacementOffer, onConfirm: (restart: Boolean) -> Unit, onDismiss: () -> Unit) {
     val check = offer.check
     val verdict = check?.verdict
     val title = when {
-        check == null && offer.error == null -> "Checking the link…"
-        offer.error != null -> "The link didn't work"
-        verdict is LinkMatch.Verdict.Same -> "Use this link?"
-        verdict is LinkMatch.Verdict.Different -> "That's a different file"
-        else -> "Start over with this link?"
+        check == null && offer.error == null -> "جارٍ التحقق من الرابط..."
+        offer.error != null -> "تعذّر استخدام الرابط"
+        verdict is LinkMatch.Verdict.Same -> "هل تريد استخدام هذا الرابط؟"
+        verdict is LinkMatch.Verdict.Different -> "هذا رابط لملف مختلف"
+        else -> "هل تريد بدء التنزيل من جديد بهذا الرابط؟"
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -100,23 +100,23 @@ fun ReplacementDialog(offer: ReplacementOffer, onConfirm: (restart: Boolean) -> 
                     check == null -> Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(8.dp))
-                        Text("Asking the server…")
+                        Text("جارٍ الاتصال بالخادم...")
                     }
                     verdict is LinkMatch.Verdict.Same -> Text(
-                        "It is the same size, so the download continues from the part that is already saved.",
+                        "حجم الملف مطابق، لذلك سيستمر التنزيل من النقطة التي وصل إليها بالفعل.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     verdict is LinkMatch.Verdict.Different -> Text(
-                        "The new link is ${Formatters.bytes(verdict.newSize)}, the download is ${Formatters.bytes(verdict.oldSize)}. " +
-                            "The link was not used.",
+                        "حجم الملف الجديد ${Formatters.bytes(verdict.newSize)}، بينما حجم الملف الحالي ${Formatters.bytes(verdict.oldSize)}. " +
+                            "لم يتم استخدام الرابط.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     verdict is LinkMatch.Verdict.RestartOnly -> Text(
                         when (verdict.reason) {
                             LinkMatch.Reason.ETAG_CHANGED ->
-                                "The server says this file has changed. Mixing it with the part already saved could corrupt it, so the download would start from zero."
+                                "يشير الخادم إلى أن الملف قد تغيّر. دمج الملف الجديد مع الجزء المحفوظ قد يؤدي إلى تلفه، لذلك يجب بدء التنزيل من الصفر."
                             LinkMatch.Reason.SIZE_UNKNOWN ->
-                                "The server doesn't tell how big the file is, so XDM can't check that it is the same one. The download would start from zero."
+                                "الخادم لا يحدد حجم الملف، لذلك لا يستطيع بحمد IDM التأكد من أنه الملف نفسه. يجب بدء التنزيل من الصفر."
                         },
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -125,14 +125,14 @@ fun ReplacementDialog(offer: ReplacementOffer, onConfirm: (restart: Boolean) -> 
         },
         confirmButton = {
             when (verdict) {
-                is LinkMatch.Verdict.Same -> TextButton(onClick = { onConfirm(false) }) { Text("Replace link") }
-                is LinkMatch.Verdict.RestartOnly -> TextButton(onClick = { onConfirm(true) }) { Text("Restart from zero") }
-                else -> if (check != null || offer.error != null) TextButton(onClick = onDismiss) { Text("OK") }
+                is LinkMatch.Verdict.Same -> TextButton(onClick = { onConfirm(false) }) { Text("استبدال الرابط") }
+                is LinkMatch.Verdict.RestartOnly -> TextButton(onClick = { onConfirm(true) }) { Text("إعادة التنزيل من الصفر") }
+                else -> if (check != null || offer.error != null) TextButton(onClick = onDismiss) { Text("حسناً") }
             }
         },
         dismissButton = {
             if (verdict is LinkMatch.Verdict.Same || verdict is LinkMatch.Verdict.RestartOnly || check == null && offer.error == null) {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text("إلغاء") }
             }
         },
     )
